@@ -21,12 +21,19 @@ impl Catalog {
     fn new() -> Self {
         Catalog { strings: HashMap::new() }
     }
+
     fn insert(&mut self, msg: Message) {
         let key = match msg.context {
             Some(ref ctxt) => [ctxt.deref(), &*msg.id].join("\x04"),
             None => msg.id.clone(),
         };
         self.strings.insert(key, msg);
+    }
+
+    /// Returns the singular translation of `msg_id` from the given catalog
+    /// or `msg_id` itself if a translation does not exist.
+    pub fn gettext<'a>(&'a self, msg_id: &'a str) -> &'a str {
+        self.strings.get(Into::into(msg_id)).and_then(|msg| msg.singular()).unwrap_or(msg_id)
     }
 }
 
@@ -51,15 +58,26 @@ impl Message {
             translated: translated.into_iter().map(Into::into).collect(),
         }
     }
+
+    fn singular(&self) -> Option<&str> {
+        self.translated.get(0).map(|s| s.deref())
+    }
 }
 
 #[test]
 fn catalog_insert() {
     let mut cat = Catalog::new();
-    println!("{:?}", cat.strings);
     cat.insert(Message::new("thisisid", None, None, vec![]));
     cat.insert(Message::new("anotherid", Some("context"), None, vec![]));
     let mut keys = cat.strings.keys().collect::<Vec<_>>();
     keys.sort();
     assert_eq!(keys, &["context\x04anotherid", "thisisid"])
+}
+
+#[test]
+fn catalog_gettext() {
+    let mut cat = Catalog::new();
+    cat.insert(Message::new("Text", None, None, vec!["Tekstas"]));
+    assert_eq!(cat.gettext("Text"), "Tekstas");
+    assert_eq!(cat.gettext("Image"), "Image");
 }
