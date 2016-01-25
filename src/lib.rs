@@ -33,7 +33,30 @@ impl Catalog {
     /// Returns the singular translation of `msg_id` from the given catalog
     /// or `msg_id` itself if a translation does not exist.
     pub fn gettext<'a>(&'a self, msg_id: &'a str) -> &'a str {
-        self.strings.get(Into::into(msg_id)).and_then(|msg| msg.singular()).unwrap_or(msg_id)
+        self.strings.get(&msg_id.to_owned()).and_then(|msg| msg.get_translated(0)).unwrap_or(msg_id)
+    }
+
+    /// Returns the plural translation of `msg_id` from the given catalog
+    /// with the correct plural form for the number `n` of objects.
+    /// Returns msg_id if a translation does not exist and `n == 1`,
+    /// msg_id_plural otherwise.
+    ///
+    /// Currently, the only supported plural formula is `n != 1`.
+    pub fn ngettext<'a>(&'a self, msg_id: &'a str, msg_id_plural: &'a str, n: usize) -> &'a str {
+        let form_no = if n != 1 {
+            1
+        } else {
+            0
+        };
+
+        match self.strings.get(&msg_id.to_owned()) {
+            Some(msg) => {
+                msg.get_translated(form_no).unwrap_or_else(|| [msg_id, msg_id_plural][form_no])
+            }
+            None if form_no == 0 => msg_id,
+            None if form_no == 1 => msg_id_plural,
+            _ => unreachable!(),
+        }
     }
 }
 
@@ -53,8 +76,8 @@ impl Message {
         }
     }
 
-    fn singular(&self) -> Option<&str> {
-        self.translated.get(0).map(|s| s.deref())
+    fn get_translated(&self, form_no: usize) -> Option<&str> {
+        self.translated.get(form_no).map(|s| s.deref())
     }
 }
 
@@ -74,4 +97,24 @@ fn catalog_gettext() {
     cat.insert(Message::new("Text", None, vec!["Tekstas"]));
     assert_eq!(cat.gettext("Text"), "Tekstas");
     assert_eq!(cat.gettext("Image"), "Image");
+}
+
+#[test]
+fn catalog_ngettext() {
+    let mut cat = Catalog::new();
+    {
+        // n == 1, no translation
+        assert_eq!(cat.ngettext("Text", "Texts", 1), "Text");
+        // n != 1, no translation
+        assert_eq!(cat.ngettext("Text", "Texts", 0), "Texts");
+        assert_eq!(cat.ngettext("Text", "Texts", 2), "Texts");
+    }
+    {
+        cat.insert(Message::new("Text", None, vec!["Tekstas", "Tekstai"]));
+        // n == 1, translation available
+        assert_eq!(cat.ngettext("Text", "Texts", 1), "Tekstas");
+        // n != 1, translation available
+        assert_eq!(cat.ngettext("Text", "Texts", 0), "Tekstai");
+        assert_eq!(cat.ngettext("Text", "Texts", 2), "Tekstai");
+    }
 }
