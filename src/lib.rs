@@ -41,20 +41,14 @@ impl Catalog {
 struct Message {
     id: String,
     context: Option<String>,
-    plural: Option<String>,
     translated: Vec<String>,
 }
 
 impl Message {
-    fn new<T: Into<String>>(id: T,
-                            context: Option<T>,
-                            plural: Option<T>,
-                            translated: Vec<T>)
-                            -> Self {
+    fn new<T: Into<String>>(id: T, context: Option<T>, translated: Vec<T>) -> Self {
         Message {
             id: id.into(),
             context: context.map(Into::into),
-            plural: plural.map(Into::into),
             translated: translated.into_iter().map(Into::into).collect(),
         }
     }
@@ -67,8 +61,8 @@ impl Message {
 #[test]
 fn catalog_insert() {
     let mut cat = Catalog::new();
-    cat.insert(Message::new("thisisid", None, None, vec![]));
-    cat.insert(Message::new("anotherid", Some("context"), None, vec![]));
+    cat.insert(Message::new("thisisid", None, vec![]));
+    cat.insert(Message::new("anotherid", Some("context"), vec![]));
     let mut keys = cat.strings.keys().collect::<Vec<_>>();
     keys.sort();
     assert_eq!(keys, &["context\x04anotherid", "thisisid"])
@@ -77,7 +71,7 @@ fn catalog_insert() {
 #[test]
 fn catalog_gettext() {
     let mut cat = Catalog::new();
-    cat.insert(Message::new("Text", None, None, vec!["Tekstas"]));
+    cat.insert(Message::new("Text", None, vec!["Tekstas"]));
     assert_eq!(cat.gettext("Text"), "Tekstas");
     assert_eq!(cat.gettext("Image"), "Image");
 }
