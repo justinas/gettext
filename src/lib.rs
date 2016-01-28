@@ -58,6 +58,15 @@ impl Catalog {
             _ => unreachable!(),
         }
     }
+
+    /// Returns the singular translation of `msg_id`
+    /// in the context `msg_context`
+    /// or `msg_id` itself if a translation does not exist.
+    // TODO: DRY gettext/pgettext
+    pub fn pgettext<'a>(&'a self, msg_context: &'a str, msg_id: &'a str) -> &'a str {
+        let key = [msg_context, msg_id].join("\x04");
+        self.strings.get(&key).and_then(|msg| msg.get_translated(0)).unwrap_or(msg_id)
+    }
 }
 
 #[derive(Debug)]
@@ -95,6 +104,7 @@ fn catalog_insert() {
 fn catalog_gettext() {
     let mut cat = Catalog::new();
     cat.insert(Message::new("Text", None, vec!["Tekstas"]));
+    cat.insert(Message::new("Image", Some("context"), vec!["Paveikslelis"]));
     assert_eq!(cat.gettext("Text"), "Tekstas");
     assert_eq!(cat.gettext("Image"), "Image");
 }
@@ -117,4 +127,12 @@ fn catalog_ngettext() {
         assert_eq!(cat.ngettext("Text", "Texts", 0), "Tekstai");
         assert_eq!(cat.ngettext("Text", "Texts", 2), "Tekstai");
     }
+}
+
+#[test]
+fn catalog_pgettext() {
+    let mut cat = Catalog::new();
+    cat.insert(Message::new("Text", Some("unit test"), vec!["Tekstas"]));
+    assert_eq!(cat.pgettext("unit test", "Text"), "Tekstas");
+    assert_eq!(cat.pgettext("integration test", "Text"), "Text");
 }
