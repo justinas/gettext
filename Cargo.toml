@@ -2,3 +2,6 @@
 name = "gettext"
 version = "0.1.0"
 authors = ["Justinas Stankevicius <justinas@justinas.org>"]
+
+[dependencies]
+byteorder = "0.4"

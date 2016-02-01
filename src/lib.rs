@@ -4,8 +4,9 @@
 // https://pascalhertleif.de/artikel/good-practices-for-writing-rust-libraries/
 #![deny(missing_docs, missing_debug_implementations,
         trivial_casts, trivial_numeric_casts,
-        unsafe_code, unstable_features,
-        unused_import_braces, unused_qualifications)]
+        unstable_features, unused_import_braces, unused_qualifications)]
+
+mod parser;
 
 use std::collections::HashMap;
 use std::ops::Deref;
