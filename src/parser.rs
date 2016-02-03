@@ -57,12 +57,12 @@ fn get_read_u32_fn(magic: &[u8]) -> Option<fn(&[u8]) -> u32> {
 }
 
 fn parse_catalog<R: io::Read>(mut file: R) -> Result<Catalog, Error> {
-    let mut magic = [0u8; 4];
-    let n = try!(file.read(&mut magic));
-    if n != 4 {
+    let mut contents = vec![];
+    let n = try!(file.read_to_end(&mut contents));
+    if n < 28 {
         return Err(Eof);
     }
-    let read_u32 = match get_read_u32_fn(&magic) {
+    let read_u32 = match get_read_u32_fn(&contents[0..4]) {
         Some(f) => f,
         None => return Err(BadMagic),
     };
@@ -106,25 +106,31 @@ fn test_parse_catalog() {
         };
     }
 
+    let fluff: &[u8] = &[0; 24]; // zeros to pad our magic test cases to satisfy the length requirements
+
     {
-        let reader: &[u8] = &[1u8, 2, 3];
-        let err = parse_catalog(reader).unwrap_err();
+        let mut reader = vec![1u8, 2, 3];
+        reader.extend(fluff);
+        let err = parse_catalog(&reader[..]).unwrap_err();
         assert_variant!(err, Eof);
     }
 
     {
-        let reader: &[u8] = &[1u8, 2, 3, 4];
-        let err = parse_catalog(reader).unwrap_err();
+        let mut reader = vec![1u8, 2, 3, 4];
+        reader.extend(fluff);
+        let err = parse_catalog(&reader[..]).unwrap_err();
         assert_variant!(err, BadMagic);
     }
 
     {
-        let reader: &[u8] = &[0x95, 0x04, 0x12, 0xde];
-        assert!(parse_catalog(reader).is_ok());
+        let mut reader = vec![0x95, 0x04, 0x12, 0xde];
+        reader.extend(fluff);
+        assert!(parse_catalog(&reader[..]).is_ok());
     }
 
     {
-        let reader: &[u8] = &[0xde, 0x12, 0x04, 0x95];
-        assert!(parse_catalog(reader).is_ok());
+        let mut reader = vec![0xde, 0x12, 0x04, 0x95];
+        reader.extend(fluff);
+        assert!(parse_catalog(&reader[..]).is_ok());
     }
 }
