@@ -1,8 +1,48 @@
 extern crate byteorder;
 
+use std::error;
+use std::fmt;
+use std::io;
 use std::mem;
 
 use self::byteorder::{ByteOrder, BigEndian, LittleEndian};
+
+use super::Catalog;
+
+/// Represents an error encountered while parsing an MO file.
+#[derive(Debug)]
+pub enum Error {
+    /// An incorrect magic number has been encountered
+    BadMagic,
+    /// An unexpected EOF occured
+    Eof,
+    /// An I/O error occured
+    Io(io::Error),
+}
+use Error::*;
+
+impl error::Error for Error {
+    fn description(&self) -> &str {
+        match *self {
+            BadMagic => "bad magic number",
+            Eof => "unxpected end of file",
+            Io(ref err) => err.description(),
+        }
+    }
+}
+
+impl fmt::Display for Error {
+    fn fmt(&self, fmt: &mut fmt::Formatter) -> fmt::Result {
+        let self_err: &error::Error = self;
+        write!(fmt, "{}", self_err.description())
+    }
+}
+
+impl From<io::Error> for Error {
+    fn from(inner: io::Error) -> Error {
+        Io(inner)
+    }
+}
 
 /// According to the given magic number of a MO file,
 /// returns the function which reads a `u32` in the relevant endianness.
@@ -14,6 +54,19 @@ fn get_read_u32_fn(magic: &[u8]) -> Option<fn(&[u8]) -> u32> {
     } else {
         None
     }
+}
+
+fn parse_catalog<R: io::Read>(mut file: R) -> Result<Catalog, Error> {
+    let mut magic = [0u8; 4];
+    let n = try!(file.read(&mut magic));
+    if n != 4 {
+        return Err(Eof);
+    }
+    let read_u32 = match get_read_u32_fn(&magic) {
+        Some(f) => f,
+        None => return Err(BadMagic),
+    };
+    Ok(Catalog::new())
 }
 
 #[test]
@@ -39,5 +92,39 @@ fn test_get_read_u32_fn() {
             ret_ptr = mem::transmute(get_read_u32_fn(&[0x95, 0x04, 0x12, 0xde]).unwrap());
         }
         assert_eq!(be_ptr, ret_ptr);
+    }
+}
+
+#[test]
+fn test_parse_catalog() {
+    macro_rules! assert_variant {
+        ($value:expr, $variant:path) => {
+            match $value {
+                $variant => (),
+                _ => panic!("Expected {}, got {}", stringify!($variant), $value),
+            }
+        };
+    }
+
+    {
+        let reader: &[u8] = &[1u8, 2, 3];
+        let err = parse_catalog(reader).unwrap_err();
+        assert_variant!(err, Eof);
+    }
+
+    {
+        let reader: &[u8] = &[1u8, 2, 3, 4];
+        let err = parse_catalog(reader).unwrap_err();
+        assert_variant!(err, BadMagic);
+    }
+
+    {
+        let reader: &[u8] = &[0x95, 0x04, 0x12, 0xde];
+        assert!(parse_catalog(reader).is_ok());
+    }
+
+    {
+        let reader: &[u8] = &[0xde, 0x12, 0x04, 0x95];
+        assert!(parse_catalog(reader).is_ok());
     }
 }

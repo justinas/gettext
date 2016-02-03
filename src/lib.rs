@@ -11,6 +11,8 @@ mod parser;
 use std::collections::HashMap;
 use std::ops::Deref;
 
+pub use parser::Error;
+
 /// Returns the number of the appropriate plural form
 /// for the given count `n` of objects for germanic languages.
 fn plural_form(n: usize) -> usize {
