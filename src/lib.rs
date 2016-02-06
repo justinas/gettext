@@ -104,7 +104,7 @@ impl Catalog {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Eq, PartialEq)]
 struct Message {
     id: String,
     context: Option<String>,
