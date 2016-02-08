@@ -1,11 +1,14 @@
 language: rust
 rust:
-  - 1.0.0
-  - 1.1.0
-  - 1.2.0
-  - 1.3.0
-  - 1.4.0
-  - 1.5.0
-  - 1.6.0
-  - beta
-  - nightly 
+- 1.0.0
+- 1.1.0
+- 1.2.0
+- 1.3.0
+- 1.4.0
+- 1.5.0
+- 1.6.0
+- beta
+- nightly
+
+env:
+  - secure: "YGYlao5pmIhsvm9Fz/6eeVnnPPGJsPtIHGsLM+prR4ZYicfgnLQQwANjLTsDapddaJg877V4v1JZLJpl82aLYj51aF6oM3/8iGIE7COnv00OenoJ0CoatIi/ZJ7F4q0OFW7L9Ls0KeBvuCKIb4dNszsdLpV7eaBtn/0T93aOtPqUi/ckrklvpBDA4HIkhyJ5TpeG0lOZOaCR7s6iFZ6GfzwNKueo6BNHLSD+R8jFILx/VTbmTC+M/DTx1BXFv/TvZ0kPdEKnx+NQIAXpicDj1J2YS2D1uc1mrEuvHZlwUQT4ReQr1a9BjX6F6ZlHKuPumjJjbohEYkVE0b6WjhDDw9JYFWHAbf8zoCQKqhF7mZHGAAuObd0I9po3Hy6z7S4kgqRwfjZhI1+z3kJaBl1XO00BwZTwhHe+1E1mmIsEgSQeN8GiGxw+4bSHIT77Q3EaVPifLw7RmfpaS/gUSfEFmKU/9MXngWEjj3zcjR6TbTWi6hXTbfTQM/Bb6DKfs/UGx+kHV7NjrHdaJDkfa615Tbk01fmindeKTC0Ezq3RShhyTu/gpbZjCxKVtI/k0/ArNLVIw3CSsYhaSs/ns5Ld0v398snIgM/fo14hprGUDXxg0UL6GO4eR5at2HQ7fbF6bZui/8S2S4dBd+K87q6NKrI5GSfLnMUL2SaaqQtzoWU="
