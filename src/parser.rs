@@ -22,7 +22,9 @@ pub enum Error {
     /// An I/O error occured
     Io(io::Error),
 }
-use Error::*;
+// Can not use use `Error::*` as per this issue:
+// (https://github.com/rust-lang/rust/issues/4865)
+use Error::{BadMagic, DecodingError, Eof, Io};
 
 impl error::Error for Error {
     fn description(&self) -> &str {
