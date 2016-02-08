@@ -226,4 +226,10 @@ fn test_parse_catalog() {
         assert_eq!(catalog.strings["Image"],
                    Message::new("Image", None, vec!["Nuotrauka", "Nuotraukos"]));
     }
+
+    {
+        let mut reader: &[u8] = include_bytes!("../test_cases/invalid_utf8.mo");
+        let err = parse_catalog(reader).unwrap_err();
+        assert_variant!(err, DecodingError);
+    }
 }
