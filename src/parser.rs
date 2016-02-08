@@ -65,7 +65,7 @@ fn from_utf8(bytes: &[u8]) -> Result<&str, Error> {
     str::from_utf8(bytes).map_err(|_| DecodingError)
 }
 
-fn parse_catalog<R: io::Read>(mut file: R) -> Result<Catalog, Error> {
+pub fn parse_catalog<R: io::Read>(mut file: R) -> Result<Catalog, Error> {
     let mut contents = vec![];
     let n = try!(file.read_to_end(&mut contents));
     if n < 28 {

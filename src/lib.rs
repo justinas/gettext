@@ -8,7 +8,10 @@
 mod parser;
 
 use std::collections::HashMap;
+use std::io::Read;
 use std::ops::Deref;
+
+use parser::parse_catalog;
 
 pub use parser::Error;
 
@@ -37,8 +40,27 @@ pub struct Catalog {
 }
 
 impl Catalog {
+    /// Creates a new, empty gettext catalog.
     fn new() -> Self {
         Catalog { strings: HashMap::new() }
+    }
+
+    /// Parses a gettext catalog from the given binary MO file.
+    /// Returns the `Err` variant upon encountering an invalid file format
+    /// or invalid byte sequence in strings.
+    ///
+    /// # Examples
+    ///
+    /// ```ignore
+    /// use gettext::Catalog;
+    /// use std::fs::File;
+    ///
+    /// let file = File::open("french.mo").unwrap();
+    /// let catalog = Catalog::parse(file).unwrap();
+    /// ```
+
+    pub fn parse<R: Read>(reader: R) -> Result<Self, parser::Error> {
+        parse_catalog(reader)
     }
 
     fn insert(&mut self, msg: Message) {
