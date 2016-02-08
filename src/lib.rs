@@ -3,8 +3,7 @@
 
 // https://pascalhertleif.de/artikel/good-practices-for-writing-rust-libraries/
 #![deny(missing_docs, missing_debug_implementations,
-        trivial_casts, trivial_numeric_casts,
-        unstable_features, unused_import_braces)]
+        trivial_casts, trivial_numeric_casts, unused_import_braces)]
 
 mod parser;
 
@@ -23,6 +22,13 @@ fn plural_form(n: usize) -> usize {
     }
 }
 
+fn key_with_context(context: &str, key: &str) -> String {
+    let mut result = context.to_owned();
+    result.push('\x04');
+    result.push_str(key);
+    result
+}
+
 /// Catalog represents a set of translation strings
 /// parsed out of one MO file.
 #[derive(Debug)]
@@ -37,7 +43,7 @@ impl Catalog {
 
     fn insert(&mut self, msg: Message) {
         let key = match msg.context {
-            Some(ref ctxt) => [&**ctxt, &*msg.id].join("\x04"),
+            Some(ref ctxt) => key_with_context(ctxt, &msg.id),
             None => msg.id.clone(),
         };
         self.strings.insert(key, msg);
@@ -73,7 +79,7 @@ impl Catalog {
     /// or `msg_id` itself if a translation does not exist.
     // TODO: DRY gettext/pgettext
     pub fn pgettext<'a>(&'a self, msg_context: &'a str, msg_id: &'a str) -> &'a str {
-        let key = [msg_context, msg_id].join("\x04");
+        let key = key_with_context(msg_context, &msg_id);
         self.strings.get(&key).and_then(|msg| msg.get_translated(0)).unwrap_or(msg_id)
     }
 
@@ -91,7 +97,7 @@ impl Catalog {
                          msg_id_plural: &'a str,
                          n: usize)
                          -> &'a str {
-        let key = [msg_context, msg_id].join("\x04");
+        let key = key_with_context(msg_context, &msg_id);
         let form_no = plural_form(n);
         match self.strings.get(&key) {
             Some(msg) => {
