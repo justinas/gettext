@@ -178,7 +178,7 @@ fn test_parse_catalog() {
         ($value:expr, $variant:path) => {
             match $value {
                 $variant => (),
-                _ => panic!("Expected {}, got {}", stringify!($variant), $value),
+                _ => panic!("Expected {:?}, got {:?}", $variant, $value),
             }
         };
     }
