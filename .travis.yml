@@ -1,14 +1,14 @@
 language: rust
 rust:
-  # - 1.0.0
-  # - 1.1.0
-  # - 1.2.0
-  # - 1.3.0
-  # - 1.4.0
-  # - 1.5.0
-- 1.6.0
-  # - beta
-  # - nightly
+  - 1.0.0
+  - 1.1.0
+  - 1.2.0
+  - 1.3.0
+  - 1.4.0
+  - 1.5.0
+  - 1.6.0
+  - beta
+  - nightly
 
 script:
   - cargo build --verbose
@@ -16,7 +16,7 @@ script:
   - cargo doc
 
 after_success: |
-  [ $TRAVIS_BRANCH = docs ] &&
+  [ $TRAVIS_BRANCH = master ] &&
   [ $TRAVIS_PULL_REQUEST = false ] &&
   [ $TRAVIS_RUST_VERSION = "1.6.0" ] &&
   cd $TRAVIS_BUILD_DIR &&
