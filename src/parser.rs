@@ -185,31 +185,31 @@ fn test_parse_catalog() {
         };
     }
 
-    let fluff: &[u8] = &[0; 24]; // zeros to pad our magic test cases to satisfy the length requirements
+    let fluff = [0; 24]; // zeros to pad our magic test cases to satisfy the length requirements
 
     {
         let mut reader = vec![1u8, 2, 3];
-        reader.extend(fluff);
+        reader.extend(fluff.iter().cloned());
         let err = parse_catalog(&reader[..]).unwrap_err();
         assert_variant!(err, Eof);
     }
 
     {
         let mut reader = vec![1u8, 2, 3, 4];
-        reader.extend(fluff);
+        reader.extend(fluff.iter().cloned());
         let err = parse_catalog(&reader[..]).unwrap_err();
         assert_variant!(err, BadMagic);
     }
 
     {
         let mut reader = vec![0x95, 0x04, 0x12, 0xde];
-        reader.extend(fluff);
+        reader.extend(fluff.iter().cloned());
         assert!(parse_catalog(&reader[..]).is_ok());
     }
 
     {
         let mut reader = vec![0xde, 0x12, 0x04, 0x95];
-        reader.extend(fluff);
+        reader.extend(fluff.iter().cloned());
         assert!(parse_catalog(&reader[..]).is_ok());
     }
 
