@@ -218,4 +218,12 @@ fn test_parse_catalog() {
         assert_eq!(catalog.strings["this is context\x04Text"],
                    Message::new("Text", Some("this is context"), vec!["Tekstas", "Tekstai"]));
     }
+
+    {
+        let mut reader: &[u8] = include_bytes!("../test_cases/2.mo");
+        let catalog = parse_catalog(reader).unwrap();
+        assert_eq!(catalog.strings.len(), 2);
+        assert_eq!(catalog.strings["Image"],
+                   Message::new("Image", None, vec!["Nuotrauka", "Nuotraukos"]));
+    }
 }
