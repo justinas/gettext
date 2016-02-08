@@ -37,7 +37,7 @@ impl Catalog {
 
     fn insert(&mut self, msg: Message) {
         let key = match msg.context {
-            Some(ref ctxt) => [ctxt.deref(), &*msg.id].join("\x04"),
+            Some(ref ctxt) => [&**ctxt, &*msg.id].join("\x04"),
             None => msg.id.clone(),
         };
         self.strings.insert(key, msg);
