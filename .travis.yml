@@ -13,7 +13,7 @@ rust:
 after_success: |
   [ $TRAVIS_BRANCH = master ] &&
   [ $TRAVIS_PULL_REQUEST = false ] &&
-  [ $TRAVIS_RUST_VERSION = "1.6.0" ] &&
+  [ $TRAVIS_RUST_VERSION = beta ] &&
   echo '<meta http-equiv=refresh content=0;url=gettext/index.html>' > target/doc/index.html &&
   pip install ghp-import --user $USER &&
   $HOME/.local/bin/ghp-import -n target/doc &&
