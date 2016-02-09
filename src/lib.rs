@@ -109,7 +109,7 @@ impl Catalog {
     /// Returns the singular translation of `msg_id` from the given catalog
     /// or `msg_id` itself if a translation does not exist.
     pub fn gettext<'a>(&'a self, msg_id: &'a str) -> &'a str {
-        self.strings.get(&msg_id.to_owned()).and_then(|msg| msg.get_translated(0)).unwrap_or(msg_id)
+        self.strings.get(msg_id).and_then(|msg| msg.get_translated(0)).unwrap_or(msg_id)
     }
 
     /// Returns the plural translation of `msg_id` from the given catalog
@@ -121,7 +121,7 @@ impl Catalog {
     pub fn ngettext<'a>(&'a self, msg_id: &'a str, msg_id_plural: &'a str, n: usize) -> &'a str {
         let form_no = plural_form(n);
 
-        match self.strings.get(&msg_id.to_owned()) {
+        match self.strings.get(msg_id) {
             Some(msg) => {
                 msg.get_translated(form_no).unwrap_or_else(|| [msg_id, msg_id_plural][form_no])
             }
