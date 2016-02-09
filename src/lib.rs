@@ -19,7 +19,7 @@
 //!
 //! # Example
 //!
-//! ```
+//! ```ignore
 //! extern crate gettext;
 //!
 //! use std::fs::File;
