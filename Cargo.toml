@@ -2,6 +2,11 @@
 name = "gettext"
 version = "0.1.0"
 authors = ["Justinas Stankevicius <justinas@justinas.org>"]
+description = "An implementation of Gettext translation framework for Rust"
+documenation = "https://justinas.github.io/gettext/gettext/"
+license = "MIT"
+repository = "https://github.com/justinas/gettext/"
+readme = "README.md"
 
 [dependencies]
 byteorder = "0.4"
