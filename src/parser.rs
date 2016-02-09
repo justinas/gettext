@@ -129,14 +129,10 @@ pub fn parse_catalog<R: io::Read>(mut file: R) -> Result<Catalog, Error> {
             if n < off + len + 1 {
                 return Err(Eof);
             }
-            let decode_results = (&contents[off..off + len])
-                                     .split(|x| *x == 0)
-                                     .map(from_utf8)
-                                     .collect::<Vec<_>>();
-            if decode_results.iter().any(|r| r.is_err()) {
-                return Err(DecodingError);
-            }
-            translated = decode_results.into_iter().map(|r| r.unwrap()).collect();
+            translated = try!((&contents[off..off + len])
+                                  .split(|x| *x == 0)
+                                  .map(from_utf8)
+                                  .collect::<Result<Vec<_>, _>>());
         }
 
         catalog.insert(Message::new(id, context, translated));
