@@ -97,10 +97,11 @@ pub fn parse_catalog<R: io::Read>(mut file: R) -> Result<Catalog, Error> {
             }
             let len = read_u32(&contents[off_otable..off_otable + 4]) as usize;
             let off = read_u32(&contents[off_otable + 4..off_otable + 8]) as usize;
-            if n < off + len {
+            // +1 compensates for the ending NUL byte which is not included in length
+            if n < off + len + 1 {
                 return Err(Eof);
             }
-            let mut original = &contents[off..off + len];
+            let mut original = &contents[off..off + len + 1];
             // check for context
             context = match original.iter().position(|x| *x == 4) {
                 Some(idx) => {
@@ -124,10 +125,11 @@ pub fn parse_catalog<R: io::Read>(mut file: R) -> Result<Catalog, Error> {
             }
             let len = read_u32(&contents[off_ttable..off_ttable + 4]) as usize;
             let off = read_u32(&contents[off_ttable + 4..off_ttable + 8]) as usize;
-            if n < off + len {
+            // +1 compensates for the ending NUL byte which is not included in length
+            if n < off + len + 1 {
                 return Err(Eof);
             }
-            let decode_results = (&contents[off..off + len])
+            let decode_results = (&contents[off..off + len + 1])
                                      .split(|x| *x == 0)
                                      .map(from_utf8)
                                      .collect::<Vec<_>>();
