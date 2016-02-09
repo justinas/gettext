@@ -1,5 +1,40 @@
-//! The `gettext` crate provides functionality for
-//! parsing and using Gettext catalogs stored in MO files.
+//! This crate is a reimplementation
+//! of GNU gettext translation framework in Rust.
+//! It allows your Rust programs to parse out GNU MO files
+//! containing translations and use them in your user interface.
+//!
+//! It contains several differences from the official C implementation.
+//! Notably, this crate does not in any way depend on a global locale
+//! ([2.2](https://www.gnu.org/software/gettext/manual/gettext.html#Setting-the-GUI-Locale))
+//! and does not enforce a directory structure
+//! for storing your translation catalogs
+//! ([11.2.3](https://www.gnu.org/software/gettext/manual/gettext.html#Locating-Catalogs)).
+//! Instead, the choice of translation catalog to use is explicitly made by the user.
+//!
+//! This crate is still in-progress
+//! and may not be on par with the original implementation feature-wise.
+//!
+//! For the exact feature parity see the roadmap in the
+//! [README](https://github.com/justinas/gettext#readme).
+//!
+//! # Example
+//!
+//! ```
+//! extern crate gettext;
+//!
+//! use std::fs::File;
+//! use gettext::Catalog;
+//!
+//! fn main() {
+//!     let f = File::open("french.mo").expect("could not open the catalog");
+//!     let catalog = Catalog::parse(f).expect("could not parse the catalog");
+//!
+//!     // Will print out the French translation
+//!     // if it is found in the parsed file
+//!     // or "Name" otherwise.
+//!     println!("{}", catalog.gettext("Name"));
+//! }
+//! ```
 
 // https://pascalhertleif.de/artikel/good-practices-for-writing-rust-libraries/
 #![deny(missing_docs, missing_debug_implementations,
