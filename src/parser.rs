@@ -8,6 +8,7 @@ use std::str;
 use self::byteorder::{ByteOrder, BigEndian, LittleEndian};
 
 use super::{Catalog, Message};
+use metadata::parse_metadata;
 
 /// Represents an error encountered while parsing an MO file.
 #[derive(Debug)]
@@ -20,10 +21,12 @@ pub enum Error {
     Eof,
     /// An I/O error occured
     Io(io::Error),
+    /// Incorrect syntax encountered while parsing the meta information
+    MalformedMetadata,
 }
 // Can not use use `Error::*` as per this issue:
 // (https://github.com/rust-lang/rust/issues/4865)
-use Error::{BadMagic, DecodingError, Eof, Io};
+use Error::{BadMagic, DecodingError, Eof, Io, MalformedMetadata};
 
 impl error::Error for Error {
     fn description(&self) -> &str {
@@ -32,6 +35,7 @@ impl error::Error for Error {
             DecodingError => "invalid byte sequence in a string",
             Eof => "unxpected end of file",
             Io(ref err) => err.description(),
+            MalformedMetadata => "metadata syntax error",
         }
     }
 }
