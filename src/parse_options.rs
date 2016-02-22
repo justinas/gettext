@@ -43,9 +43,3 @@ impl fmt::Debug for ParseOptions {
         debug_fmt.finish()
     }
 }
-
-#[test]
-fn test_parse_options() {
-    let enc = self::encoding::label::encoding_from_whatwg_label("cp1257").unwrap();
-    panic!("{:?}", ParseOptions::new().force_encoding(enc));
-}
