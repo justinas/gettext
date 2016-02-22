@@ -42,10 +42,13 @@
 
 mod metadata;
 mod parser;
+mod parse_options;
 
 use std::collections::HashMap;
 use std::io::Read;
 use std::ops::Deref;
+
+pub use parse_options::ParseOptions;
 
 use parser::parse_catalog;
 
@@ -96,7 +99,7 @@ impl Catalog {
     /// ```
 
     pub fn parse<R: Read>(reader: R) -> Result<Self, parser::Error> {
-        parse_catalog(reader)
+        parse_catalog(reader, ParseOptions::new())
     }
 
     fn insert(&mut self, msg: Message) {

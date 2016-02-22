@@ -7,7 +7,7 @@ use std::str;
 
 use self::byteorder::{ByteOrder, BigEndian, LittleEndian};
 
-use super::{Catalog, Message};
+use super::{Catalog, Message, ParseOptions};
 use metadata::parse_metadata;
 
 /// Represents an error encountered while parsing an MO file.
@@ -69,7 +69,7 @@ fn from_utf8(bytes: &[u8]) -> Result<&str, Error> {
     str::from_utf8(bytes).map_err(|_| DecodingError)
 }
 
-pub fn parse_catalog<R: io::Read>(mut file: R) -> Result<Catalog, Error> {
+pub fn parse_catalog<R: io::Read>(mut file: R, opts: ParseOptions) -> Result<Catalog, Error> {
     let mut contents = vec![];
     let n = try!(file.read_to_end(&mut contents));
     if n < 28 {
@@ -193,32 +193,32 @@ fn test_parse_catalog() {
     {
         let mut reader = vec![1u8, 2, 3];
         reader.extend(fluff.iter().cloned());
-        let err = parse_catalog(&reader[..]).unwrap_err();
+        let err = parse_catalog(&reader[..], ParseOptions::new()).unwrap_err();
         assert_variant!(err, Eof);
     }
 
     {
         let mut reader = vec![1u8, 2, 3, 4];
         reader.extend(fluff.iter().cloned());
-        let err = parse_catalog(&reader[..]).unwrap_err();
+        let err = parse_catalog(&reader[..], ParseOptions::new()).unwrap_err();
         assert_variant!(err, BadMagic);
     }
 
     {
         let mut reader = vec![0x95, 0x04, 0x12, 0xde];
         reader.extend(fluff.iter().cloned());
-        assert!(parse_catalog(&reader[..]).is_ok());
+        assert!(parse_catalog(&reader[..], ParseOptions::new()).is_ok());
     }
 
     {
         let mut reader = vec![0xde, 0x12, 0x04, 0x95];
         reader.extend(fluff.iter().cloned());
-        assert!(parse_catalog(&reader[..]).is_ok());
+        assert!(parse_catalog(&reader[..], ParseOptions::new()).is_ok());
     }
 
     {
         let reader: &[u8] = include_bytes!("../test_cases/1.mo");
-        let catalog = parse_catalog(reader).unwrap();
+        let catalog = parse_catalog(reader, ParseOptions::new()).unwrap();
         assert_eq!(catalog.strings.len(), 1);
         assert_eq!(catalog.strings["this is context\x04Text"],
                    Message::new("Text", Some("this is context"), vec!["Tekstas", "Tekstai"]));
@@ -226,7 +226,7 @@ fn test_parse_catalog() {
 
     {
         let reader: &[u8] = include_bytes!("../test_cases/2.mo");
-        let catalog = parse_catalog(reader).unwrap();
+        let catalog = parse_catalog(reader, ParseOptions::new()).unwrap();
         assert_eq!(catalog.strings.len(), 2);
         assert_eq!(catalog.strings["Image"],
                    Message::new("Image", None, vec!["Nuotrauka", "Nuotraukos"]));
@@ -234,7 +234,7 @@ fn test_parse_catalog() {
 
     {
         let reader: &[u8] = include_bytes!("../test_cases/invalid_utf8.mo");
-        let err = parse_catalog(reader).unwrap_err();
+        let err = parse_catalog(reader, ParseOptions::new()).unwrap_err();
         assert_variant!(err, DecodingError);
     }
 }
