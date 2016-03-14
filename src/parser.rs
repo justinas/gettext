@@ -1,14 +1,21 @@
 extern crate byteorder;
+extern crate encoding;
 
+use std::borrow::Cow;
 use std::error;
 use std::fmt;
 use std::io;
-use std::str;
 
 use self::byteorder::{ByteOrder, BigEndian, LittleEndian};
+use self::encoding::label::encoding_from_whatwg_label;
+use self::encoding::types::EncodingRef;
+use self::encoding::types::DecoderTrap::Strict;
 
-use super::{Catalog, Message, ParseOptions};
+use super::{Catalog, Message};
 use metadata::parse_metadata;
+
+#[allow(non_upper_case_globals)]
+static utf8_encoding: EncodingRef = &encoding::codec::utf_8::UTF8Encoding;
 
 /// Represents an error encountered while parsing an MO file.
 #[derive(Debug)]
@@ -25,10 +32,13 @@ pub enum Error {
     MalformedMetadata,
     /// Meta information string was not the first string in the catalog
     MisplacedMetadata,
+    /// An unknown encoding was specified in the metadata
+    UnknownEncoding,
 }
 // Can not use use `Error::*` as per this issue:
 // (https://github.com/rust-lang/rust/issues/4865)
-use Error::{BadMagic, DecodingError, Eof, Io, MalformedMetadata, MisplacedMetadata};
+use Error::{BadMagic, DecodingError, Eof, Io, MalformedMetadata, MisplacedMetadata,
+            UnknownEncoding};
 
 impl error::Error for Error {
     fn description(&self) -> &str {
@@ -38,6 +48,8 @@ impl error::Error for Error {
             Eof => "unxpected end of file",
             Io(ref err) => err.description(),
             MalformedMetadata => "metadata syntax error",
+            MisplacedMetadata => "misplaced metadata",
+            UnknownEncoding => "unknown encoding specified",
         }
     }
 }
@@ -55,6 +67,40 @@ impl From<io::Error> for Error {
     }
 }
 
+impl From<Cow<'static, str>> for Error {
+    fn from(_: Cow<'static, str>) -> Error {
+        DecodingError
+    }
+}
+
+/// ParseOptions allows setting options for parsing MO catalogs.
+#[allow(missing_debug_implementations)]
+pub struct ParseOptions {
+    force_encoding: Option<EncodingRef>,
+}
+
+impl ParseOptions {
+    /// Returns a new instance of ParseOptions with default options.
+    pub fn new() -> Self {
+        ParseOptions { force_encoding: None }
+    }
+
+    /// Tries to parse the catalog from the given reader using the specified options.
+    pub fn parse<R: io::Read>(&self, reader: R) -> Result<Catalog, Error> {
+        parse_catalog(reader, self)
+    }
+
+    /// Forces a use of a specific encoding
+    /// when parsing strings from a catalog.
+    /// If this option is not enabled,
+    /// the parser tries to use the encoding specified in the metadata
+    /// or UTF-8 if metadata is non-existent.
+    pub fn force_encoding(&mut self, encoding: EncodingRef) -> &mut Self {
+        self.force_encoding = Some(encoding);
+        self
+    }
+}
+
 /// According to the given magic number of a MO file,
 /// returns the function which reads a `u32` in the relevant endianness.
 fn get_read_u32_fn(magic: &[u8]) -> Option<fn(&[u8]) -> u32> {
@@ -67,11 +113,7 @@ fn get_read_u32_fn(magic: &[u8]) -> Option<fn(&[u8]) -> u32> {
     }
 }
 
-fn from_utf8(bytes: &[u8]) -> Result<&str, Error> {
-    str::from_utf8(bytes).map_err(|_| DecodingError)
-}
-
-pub fn parse_catalog<R: io::Read>(mut file: R, opts: ParseOptions) -> Result<Catalog, Error> {
+pub fn parse_catalog<R: io::Read>(mut file: R, opts: &ParseOptions) -> Result<Catalog, Error> {
     let mut contents = vec![];
     let n = try!(file.read_to_end(&mut contents));
     if n < 28 {
@@ -92,10 +134,12 @@ pub fn parse_catalog<R: io::Read>(mut file: R, opts: ParseOptions) -> Result<Cat
     }
 
     let mut catalog = Catalog::new();
+    let mut encoding = opts.force_encoding.unwrap_or(utf8_encoding);
+
     for i in 0..num_strings {
         let id;
         let context;
-        let translated: Vec<&str>;
+        let translated: Vec<String>;
         // Parse the original string
         {
             if n < off_otable + 8 {
@@ -113,13 +157,13 @@ pub fn parse_catalog<R: io::Read>(mut file: R, opts: ParseOptions) -> Result<Cat
                 Some(idx) => {
                     let ctx = &original[..idx];
                     original = &original[idx + 1..];
-                    Some(try!(from_utf8(ctx)))
+                    Some(try!(encoding.decode(ctx, Strict)))
                 }
                 None => None,
             };
             // extract msg_id singular, ignoring the plural
             id = match original.iter().position(|x| *x == 0).map(|i| &original[..i]) {
-                Some(b) => try!(from_utf8(b)),
+                Some(b) => try!(encoding.decode(b, Strict)),
                 None => return Err(Eof),
             };
             if id == "" && i != 0 {
@@ -140,8 +184,20 @@ pub fn parse_catalog<R: io::Read>(mut file: R, opts: ParseOptions) -> Result<Cat
             }
             translated = try!((&contents[off..off + len])
                                   .split(|x| *x == 0)
-                                  .map(from_utf8)
+                                  .map(|b| encoding.decode(b, Strict))
                                   .collect::<Result<Vec<_>, _>>());
+            if id == "" {
+                let map = parse_metadata(&*translated[0]).unwrap();
+                match (map.charset(), opts.force_encoding) {
+                    (Some(c), None) => {
+                        encoding = match encoding_from_whatwg_label(c) {
+                            Some(enc_ref) => enc_ref,
+                            None => return Err(UnknownEncoding),
+                        }
+                    }
+                    _ => (),
+                }
+            }
         }
 
         catalog.insert(Message::new(id, context, translated));
@@ -198,32 +254,32 @@ fn test_parse_catalog() {
     {
         let mut reader = vec![1u8, 2, 3];
         reader.extend(fluff.iter().cloned());
-        let err = parse_catalog(&reader[..], ParseOptions::new()).unwrap_err();
+        let err = parse_catalog(&reader[..], &ParseOptions::new()).unwrap_err();
         assert_variant!(err, Eof);
     }
 
     {
         let mut reader = vec![1u8, 2, 3, 4];
         reader.extend(fluff.iter().cloned());
-        let err = parse_catalog(&reader[..], ParseOptions::new()).unwrap_err();
+        let err = parse_catalog(&reader[..], &ParseOptions::new()).unwrap_err();
         assert_variant!(err, BadMagic);
     }
 
     {
         let mut reader = vec![0x95, 0x04, 0x12, 0xde];
         reader.extend(fluff.iter().cloned());
-        assert!(parse_catalog(&reader[..], ParseOptions::new()).is_ok());
+        assert!(parse_catalog(&reader[..], &ParseOptions::new()).is_ok());
     }
 
     {
         let mut reader = vec![0xde, 0x12, 0x04, 0x95];
         reader.extend(fluff.iter().cloned());
-        assert!(parse_catalog(&reader[..], ParseOptions::new()).is_ok());
+        assert!(parse_catalog(&reader[..], &ParseOptions::new()).is_ok());
     }
 
     {
         let reader: &[u8] = include_bytes!("../test_cases/1.mo");
-        let catalog = parse_catalog(reader, ParseOptions::new()).unwrap();
+        let catalog = parse_catalog(reader, &ParseOptions::new()).unwrap();
         assert_eq!(catalog.strings.len(), 1);
         assert_eq!(catalog.strings["this is context\x04Text"],
                    Message::new("Text", Some("this is context"), vec!["Tekstas", "Tekstai"]));
@@ -231,7 +287,7 @@ fn test_parse_catalog() {
 
     {
         let reader: &[u8] = include_bytes!("../test_cases/2.mo");
-        let catalog = parse_catalog(reader, ParseOptions::new()).unwrap();
+        let catalog = parse_catalog(reader, &ParseOptions::new()).unwrap();
         assert_eq!(catalog.strings.len(), 2);
         assert_eq!(catalog.strings["Image"],
                    Message::new("Image", None, vec!["Nuotrauka", "Nuotraukos"]));
@@ -239,7 +295,24 @@ fn test_parse_catalog() {
 
     {
         let reader: &[u8] = include_bytes!("../test_cases/invalid_utf8.mo");
-        let err = parse_catalog(reader, ParseOptions::new()).unwrap_err();
+        let err = parse_catalog(reader, &ParseOptions::new()).unwrap_err();
         assert_variant!(err, DecodingError);
+    }
+
+    // cp1257_meta
+    {
+        let reader: &[u8] = include_bytes!("../test_cases/cp1257_meta.mo");
+        let catalog = parse_catalog(reader, &ParseOptions::new()).unwrap();
+        assert_eq!(catalog.gettext("Garlic"), "Česnakas");
+    }
+
+    // cp1257_forced
+    {
+        let reader: &[u8] = include_bytes!("../test_cases/cp1257_forced.mo");
+        for enc_name in &["cp1257", "windows-1257", "x-cp1257"] {
+            let encoding = encoding_from_whatwg_label(enc_name).unwrap();
+            let catalog = ParseOptions::new().force_encoding(encoding).parse(reader).unwrap();
+            assert_eq!(catalog.gettext("Garlic"), "Česnakas");
+        }
     }
 }

@@ -42,17 +42,12 @@
 
 mod metadata;
 mod parser;
-mod parse_options;
 
 use std::collections::HashMap;
 use std::io::Read;
 use std::ops::Deref;
 
-pub use parse_options::ParseOptions;
-
-use parser::parse_catalog;
-
-pub use parser::Error;
+pub use parser::{Error, ParseOptions};
 
 /// Returns the number of the appropriate plural form
 /// for the given count `n` of objects for germanic languages.
@@ -88,6 +83,9 @@ impl Catalog {
     /// Returns the `Err` variant upon encountering an invalid file format
     /// or invalid byte sequence in strings.
     ///
+    /// Calling this method is equivalent to calling
+    /// `ParseOptions::new().parse(reader)`.
+    ///
     /// # Examples
     ///
     /// ```ignore
@@ -99,7 +97,7 @@ impl Catalog {
     /// ```
 
     pub fn parse<R: Read>(reader: R) -> Result<Self, parser::Error> {
-        parse_catalog(reader, ParseOptions::new())
+        ParseOptions::new().parse(reader)
     }
 
     fn insert(&mut self, msg: Message) {
