@@ -7,6 +7,7 @@ rust:
   - 1.4.0
   - 1.5.0
   - 1.6.0
+  - 1.7.0
   - beta
   - nightly
 
@@ -18,7 +19,7 @@ script:
 after_success: |
   [ $TRAVIS_BRANCH = master ] &&
   [ $TRAVIS_PULL_REQUEST = false ] &&
-  [ $TRAVIS_RUST_VERSION = "1.6.0" ] &&
+  [ $TRAVIS_RUST_VERSION = "1.7.0" ] &&
   cd $TRAVIS_BUILD_DIR &&
   echo '<meta http-equiv=refresh content=0;url=gettext/index.html>' > target/doc/index.html &&
   pip install ghp-import --user $USER &&
