@@ -23,10 +23,12 @@ pub enum Error {
     Io(io::Error),
     /// Incorrect syntax encountered while parsing the meta information
     MalformedMetadata,
+    /// Meta information string was not the first string in the catalog
+    MisplacedMetadata,
 }
 // Can not use use `Error::*` as per this issue:
 // (https://github.com/rust-lang/rust/issues/4865)
-use Error::{BadMagic, DecodingError, Eof, Io, MalformedMetadata};
+use Error::{BadMagic, DecodingError, Eof, Io, MalformedMetadata, MisplacedMetadata};
 
 impl error::Error for Error {
     fn description(&self) -> &str {
@@ -90,7 +92,7 @@ pub fn parse_catalog<R: io::Read>(mut file: R, opts: ParseOptions) -> Result<Cat
     }
 
     let mut catalog = Catalog::new();
-    for _ in 0..num_strings {
+    for i in 0..num_strings {
         let id;
         let context;
         let translated: Vec<&str>;
@@ -120,6 +122,9 @@ pub fn parse_catalog<R: io::Read>(mut file: R, opts: ParseOptions) -> Result<Cat
                 Some(b) => try!(from_utf8(b)),
                 None => return Err(Eof),
             };
+            if id == "" && i != 0 {
+                return Err(MisplacedMetadata);
+            }
         }
 
         // Parse the translation strings
