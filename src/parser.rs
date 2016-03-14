@@ -74,6 +74,17 @@ impl From<Cow<'static, str>> for Error {
 }
 
 /// ParseOptions allows setting options for parsing MO catalogs.
+///
+/// # Examples
+/// ```ignore
+/// use std::fs::File;
+///
+/// extern crate encoding;
+/// use encoding::all::ISO_8859_1;
+///
+/// let file = File::open("french.mo").unwrap();
+/// let catalog = ParseOptions::new().force_encoding(ISO_8859_1).parse(file).unwrap();
+/// ```
 #[allow(missing_debug_implementations)]
 pub struct ParseOptions {
     force_encoding: Option<EncodingRef>,
