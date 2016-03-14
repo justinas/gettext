@@ -1,6 +1,6 @@
 [package]
 name = "gettext"
-version = "0.1.0"
+version = "0.2.0"
 authors = ["Justinas Stankevicius <justinas@justinas.org>"]
 description = "An implementation of Gettext translation framework for Rust"
 documentation = "https://justinas.github.io/gettext/gettext/"

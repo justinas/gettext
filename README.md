@@ -1,6 +1,6 @@
 # Gettext for Rust
 
-[Documentation (0.1)](https://crates.fyi/crates/gettext/0.1.0/)
+[Documentation (0.2)](https://crates.fyi/crates/gettext/0.2.0/)
 
 [Documentation (master)](https://justinas.github.io/gettext/gettext/)
 
