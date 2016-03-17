@@ -2,6 +2,7 @@ extern crate byteorder;
 extern crate encoding;
 
 use std::borrow::Cow;
+use std::default::Default;
 use std::error;
 use std::fmt;
 use std::io;
@@ -86,14 +87,16 @@ impl From<Cow<'static, str>> for Error {
 /// let catalog = ParseOptions::new().force_encoding(ISO_8859_1).parse(file).unwrap();
 /// ```
 #[allow(missing_debug_implementations)]
+#[derive(Default)]
 pub struct ParseOptions {
     force_encoding: Option<EncodingRef>,
+    force_plural: Option<Box<Fn(u64) -> usize + 'static>>,
 }
 
 impl ParseOptions {
     /// Returns a new instance of ParseOptions with default options.
     pub fn new() -> Self {
-        ParseOptions { force_encoding: None }
+        Default::default()
     }
 
     /// Tries to parse the catalog from the given reader using the specified options.
@@ -108,6 +111,18 @@ impl ParseOptions {
     /// or UTF-8 if metadata is non-existent.
     pub fn force_encoding(&mut self, encoding: EncodingRef) -> &mut Self {
         self.force_encoding = Some(encoding);
+        self
+    }
+
+    /// Forces a use of the given plural formula
+    /// for deciding the proper plural form for a message.
+    /// If this option is not enabled,
+    /// the parser tries to use the plural formula
+    /// specified in the catalog,
+    /// falling back on `n != 1`
+    /// in case it fails to find or parse one.
+    pub fn force_plural<T: Fn(u64) -> usize + 'static>(&mut self, plural: T) -> &mut Self {
+        self.force_plural = Some(Box::new(plural));
         self
     }
 }
