@@ -54,16 +54,6 @@ use std::ops::Deref;
 pub use parser::{Error, ParseOptions};
 use plurals::Resolver::{self, Function};
 
-/// Returns the number of the appropriate plural form
-/// for the given count `n` of objects for germanic languages.
-fn plural_form(n: usize) -> usize {
-    if n != 1 {
-        1
-    } else {
-        0
-    }
-}
-
 fn key_with_context(context: &str, key: &str) -> String {
     let mut result = context.to_owned();
     result.push('\x04');

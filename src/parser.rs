@@ -161,7 +161,7 @@ pub fn parse_catalog<R: io::Read>(mut file: R, opts: ParseOptions) -> Result<Cat
     }
 
     let mut catalog = Catalog::new();
-    let mut resolver = match opts.force_plural {
+    let resolver = match opts.force_plural {
         Some(func) => Some(Resolver::Function(func)),
         None => None,
     };
