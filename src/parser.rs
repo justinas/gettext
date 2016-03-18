@@ -321,21 +321,4 @@ fn test_parse_catalog() {
         let err = parse_catalog(reader, ParseOptions::new()).unwrap_err();
         assert_variant!(err, DecodingError);
     }
-
-    // cp1257_meta
-    {
-        let reader: &[u8] = include_bytes!("../test_cases/cp1257_meta.mo");
-        let catalog = parse_catalog(reader, ParseOptions::new()).unwrap();
-        assert_eq!(catalog.gettext("Garlic"), "Česnakas");
-    }
-
-    // cp1257_forced
-    {
-        let reader: &[u8] = include_bytes!("../test_cases/cp1257_forced.mo");
-        for enc_name in &["cp1257", "windows-1257", "x-cp1257"] {
-            let encoding = encoding_from_whatwg_label(enc_name).unwrap();
-            let catalog = ParseOptions::new().force_encoding(encoding).parse(reader).unwrap();
-            assert_eq!(catalog.gettext("Garlic"), "Česnakas");
-        }
-    }
 }
