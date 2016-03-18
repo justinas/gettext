@@ -45,12 +45,14 @@
 
 mod metadata;
 mod parser;
+mod plurals;
 
 use std::collections::HashMap;
 use std::io::Read;
 use std::ops::Deref;
 
 pub use parser::{Error, ParseOptions};
+use plurals::Resolver::{self, Function};
 
 /// Returns the number of the appropriate plural form
 /// for the given count `n` of objects for germanic languages.
@@ -74,12 +76,22 @@ fn key_with_context(context: &str, key: &str) -> String {
 #[derive(Debug)]
 pub struct Catalog {
     strings: HashMap<String, Message>,
+    resolver: Resolver,
 }
 
 impl Catalog {
     /// Creates a new, empty gettext catalog.
     fn new() -> Self {
-        Catalog { strings: HashMap::new() }
+        Catalog {
+            strings: HashMap::new(),
+            resolver: Function(Box::new(|n| {
+                if n != 1 {
+                    1
+                } else {
+                    0
+                }
+            })),
+        }
     }
 
     /// Parses a gettext catalog from the given binary MO file.
@@ -123,15 +135,15 @@ impl Catalog {
     /// msg_id_plural otherwise.
     ///
     /// Currently, the only supported plural formula is `n != 1`.
-    pub fn ngettext<'a>(&'a self, msg_id: &'a str, msg_id_plural: &'a str, n: usize) -> &'a str {
-        let form_no = plural_form(n);
+    pub fn ngettext<'a>(&'a self, msg_id: &'a str, msg_id_plural: &'a str, n: u64) -> &'a str {
+        let form_no = self.resolver.resolve(n);
 
         match self.strings.get(msg_id) {
             Some(msg) => {
                 msg.get_translated(form_no).unwrap_or_else(|| [msg_id, msg_id_plural][form_no])
             }
-            None if form_no == 0 => msg_id,
-            None if form_no == 1 => msg_id_plural,
+            None if n == 1 => msg_id,
+            None if n != 1 => msg_id_plural,
             _ => unreachable!(),
         }
     }
@@ -157,16 +169,16 @@ impl Catalog {
                          msg_context: &'a str,
                          msg_id: &'a str,
                          msg_id_plural: &'a str,
-                         n: usize)
+                         n: u64)
                          -> &'a str {
         let key = key_with_context(msg_context, &msg_id);
-        let form_no = plural_form(n);
+        let form_no = self.resolver.resolve(n);
         match self.strings.get(&key) {
             Some(msg) => {
                 msg.get_translated(form_no).unwrap_or_else(|| [msg_id, msg_id_plural][form_no])
             }
-            None if form_no == 0 => msg_id,
-            None if form_no == 1 => msg_id_plural,
+            None if n == 1 => msg_id,
+            None if n != 1 => msg_id_plural,
             _ => unreachable!(),
         }
     }
@@ -255,4 +267,33 @@ fn catalog_npgettext() {
                "Texts");
     assert_eq!(cat.npgettext("integration test", "Text", "Texts", 2),
                "Texts");
+}
+
+#[cfg(test)]
+fn lithuanian_plural(n: u64) -> usize {
+    if (n % 10) == 1 && (n % 100) != 11 {
+        0
+    } else if ((n % 10) >= 2) && ((n % 100) < 10 || (n % 100) >= 20) {
+        1
+    } else {
+        2
+    }
+}
+
+#[test]
+fn catalog_ngettext_resolver() {
+    let mut cat = Catalog::new();
+    cat.insert(Message::new("Garlic", None, vec!["Česnakas", "Česnakai", "Česnakų"]));
+    // https://localization-guide.readthedocs.org/en/latest/l10n/pluralforms.html
+    cat.resolver = Resolver::Function(Box::new(lithuanian_plural));
+
+    assert_eq!(cat.ngettext("Garlic", "Garlics", 0), "Česnakų");
+    assert_eq!(cat.ngettext("Garlic", "Garlics", 1), "Česnakas");
+    for i in 2..9 {
+        assert_eq!(cat.ngettext("Garlic", "Garlics", i), "Česnakai");
+    }
+    for i in 10..20 {
+        assert_eq!(cat.ngettext("Garlic", "Garlics", i), "Česnakų");
+    }
+    assert_eq!(cat.ngettext("Garlic", "Garlics", 21), "Česnakas");
 }
