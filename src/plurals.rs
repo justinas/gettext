@@ -7,7 +7,7 @@ pub enum Resolver {
 }
 
 impl Resolver {
-    /// Resolver returns the number of the correct plural form
+    /// Returns the number of the correct plural form
     /// for `n` objects, as defined by the rule contained in this resolver.
     pub fn resolve(&self, n: u64) -> usize {
         match *self {
