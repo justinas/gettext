@@ -3,6 +3,7 @@ use std::fmt;
 use self::Resolver::Function;
 
 pub enum Resolver {
+    /// A function/closure manually supplied by the user.
     Function(Box<Fn(u64) -> usize>),
 }
 
