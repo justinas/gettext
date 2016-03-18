@@ -13,6 +13,7 @@ use self::encoding::types::EncodingRef;
 use self::encoding::types::DecoderTrap::Strict;
 
 use super::{Catalog, Message};
+use super::plurals::Resolver;
 use metadata::parse_metadata;
 
 #[allow(non_upper_case_globals)]
@@ -160,6 +161,10 @@ pub fn parse_catalog<R: io::Read>(mut file: R, opts: ParseOptions) -> Result<Cat
     }
 
     let mut catalog = Catalog::new();
+    let mut resolver = match opts.force_plural {
+        Some(func) => Some(Resolver::Function(func)),
+        None => None,
+    };
     let mut encoding = opts.force_encoding.unwrap_or(utf8_encoding);
 
     for i in 0..num_strings {
@@ -229,6 +234,9 @@ pub fn parse_catalog<R: io::Read>(mut file: R, opts: ParseOptions) -> Result<Cat
         off_ttable += 8;
     }
 
+    if let Some(r) = resolver {
+        catalog.resolver = r;
+    }
 
     Ok(catalog)
 }

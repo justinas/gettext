@@ -57,3 +57,32 @@ fn test_cp1257() {
         }
     }
 }
+
+#[test]
+fn test_lt_plural() {
+    fn lithuanian_plural(n: u64) -> usize {
+        if (n % 10) == 1 && (n % 100) != 11 {
+            0
+        } else if ((n % 10) >= 2) && ((n % 100) < 10 || (n % 100) >= 20) {
+            1
+        } else {
+            2
+        }
+    }
+
+    // lt_plural_forced
+    {
+        let reader: &[u8] = include_bytes!("../test_cases/lt_plural_forced.mo");
+        let cat = ParseOptions::new().force_plural(lithuanian_plural).parse(reader).unwrap();
+
+        assert_eq!(cat.ngettext("Garlic", "Garlics", 0), "Česnakų");
+        assert_eq!(cat.ngettext("Garlic", "Garlics", 1), "Česnakas");
+        for i in 2..9 {
+            assert_eq!(cat.ngettext("Garlic", "Garlics", i), "Česnakai");
+        }
+        for i in 10..20 {
+            assert_eq!(cat.ngettext("Garlic", "Garlics", i), "Česnakų");
+        }
+        assert_eq!(cat.ngettext("Garlic", "Garlics", 21), "Česnakas");
+    }
+}
