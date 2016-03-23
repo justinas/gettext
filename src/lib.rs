@@ -40,6 +40,9 @@
 #![deny(missing_docs, missing_debug_implementations,
         trivial_casts, trivial_numeric_casts, unused_import_braces)]
 
+#![cfg_attr(feature="clippy", feature(plugin))]
+#![cfg_attr(feature="clippy", plugin(clippy))]
+
 mod metadata;
 mod parser;
 

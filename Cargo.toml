@@ -11,3 +11,8 @@ readme = "README.md"
 [dependencies]
 byteorder = "0.4"
 encoding = "0.2.32"
+
+clippy = {version = "*", optional = true}
+
+[features]
+default=[]
