@@ -30,7 +30,7 @@ impl<'a> DerefMut for MetadataMap<'a> {
 pub fn parse_metadata(blob: &str) -> Result<MetadataMap, Error> {
     let mut map = MetadataMap(HashMap::new());
     for line in blob.split('\n').filter(|s| s != &"") {
-        let pos = match line.bytes().position(|b| b == ':' as u8) {
+        let pos = match line.bytes().position(|b| b == b':') {
             Some(p) => p,
             None => return Err(MalformedMetadata),
         };

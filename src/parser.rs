@@ -199,14 +199,11 @@ pub fn parse_catalog<R: io::Read>(mut file: R, opts: &ParseOptions) -> Result<Ca
                                   .collect::<Result<Vec<_>, _>>());
             if id == "" {
                 let map = parse_metadata(&*translated[0]).unwrap();
-                match (map.charset(), opts.force_encoding) {
-                    (Some(c), None) => {
-                        encoding = match encoding_from_whatwg_label(c) {
-                            Some(enc_ref) => enc_ref,
-                            None => return Err(UnknownEncoding),
-                        }
+                if let (Some(c), None) = (map.charset(), opts.force_encoding) {
+                    encoding = match encoding_from_whatwg_label(c) {
+                        Some(enc_ref) => enc_ref,
+                        None => return Err(UnknownEncoding),
                     }
-                    _ => (),
                 }
             }
         }
@@ -232,7 +229,7 @@ fn test_get_read_u32_fn() {
         let le_ptr: *const ();
         let ret_ptr;
         unsafe {
-            le_ptr = mem::transmute(LittleEndian::read_u32);
+            le_ptr = mem::transmute(LittleEndian::read_u32 as usize);
             ret_ptr = mem::transmute(get_read_u32_fn(&[0xde, 0x12, 0x04, 0x95]).unwrap());
         }
         assert_eq!(le_ptr, ret_ptr);
