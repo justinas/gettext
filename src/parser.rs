@@ -239,7 +239,7 @@ fn test_get_read_u32_fn() {
         let be_ptr: *const ();
         let ret_ptr;
         unsafe {
-            be_ptr = mem::transmute(BigEndian::read_u32);
+            be_ptr = mem::transmute(BigEndian::read_u32 as usize);
             ret_ptr = mem::transmute(get_read_u32_fn(&[0x95, 0x04, 0x12, 0xde]).unwrap());
         }
         assert_eq!(be_ptr, ret_ptr);
