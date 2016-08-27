@@ -118,10 +118,8 @@ impl ParseOptions {
     /// Forces a use of the given plural formula
     /// for deciding the proper plural form for a message.
     /// If this option is not enabled,
-    /// the parser tries to use the plural formula
-    /// specified in the catalog,
-    /// falling back on `n != 1`
-    /// in case it fails to find or parse one.
+    /// the parser uses the default formula
+    /// (`n != 1`).
     pub fn force_plural<T: Fn(u64) -> usize + 'static>(mut self, plural: T) -> Self {
         self.force_plural = Some(Box::new(plural));
         self
