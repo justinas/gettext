@@ -1,8 +1,6 @@
 # Gettext for Rust
 
-[Documentation (0.2)](https://crates.fyi/crates/gettext/0.2.0/)
-
-[Documentation (master)](https://justinas.github.io/gettext/gettext/)
+[Documentation (latest stable)](https://docs.rs/gettext/)
 
 ## Roadmap for now
 - [x] Parsing MO files (10.3)
