@@ -37,10 +37,7 @@ pub enum Error {
     /// An unknown encoding was specified in the metadata
     UnknownEncoding,
 }
-// Can not use use `Error::*` as per this issue:
-// (https://github.com/rust-lang/rust/issues/4865)
-use Error::{BadMagic, DecodingError, Eof, Io, MalformedMetadata, MisplacedMetadata,
-            UnknownEncoding};
+use Error::*;
 
 impl error::Error for Error {
     fn description(&self) -> &str {
