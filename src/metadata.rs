@@ -10,7 +10,8 @@ pub struct MetadataMap<'a>(HashMap<&'a str, &'a str>);
 impl<'a> MetadataMap<'a> {
     /// Returns a string that indicates the character set.
     pub fn charset(&self) -> Option<&'a str> {
-        self.get("Content-Type").and_then(|x| x.split("charset=").skip(1).next())
+        self.get("Content-Type")
+            .and_then(|x| x.split("charset=").skip(1).next())
     }
 }
 

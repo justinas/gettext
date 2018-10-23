@@ -37,11 +37,15 @@
 //! ```
 
 // https://pascalhertleif.de/artikel/good-practices-for-writing-rust-libraries/
-#![deny(missing_docs, missing_debug_implementations,
-        trivial_casts, trivial_numeric_casts, unused_import_braces)]
-
-#![cfg_attr(feature="clippy", feature(plugin))]
-#![cfg_attr(feature="clippy", plugin(clippy))]
+#![deny(
+    missing_docs,
+    missing_debug_implementations,
+    trivial_casts,
+    trivial_numeric_casts,
+    unused_import_braces
+)]
+#![cfg_attr(feature = "clippy", feature(plugin))]
+#![cfg_attr(feature = "clippy", plugin(clippy))]
 
 mod metadata;
 mod parser;
@@ -74,13 +78,7 @@ impl Catalog {
     fn new() -> Self {
         Catalog {
             strings: HashMap::new(),
-            resolver: Function(Box::new(|n| {
-                if n != 1 {
-                    1
-                } else {
-                    0
-                }
-            })),
+            resolver: Function(Box::new(|n| if n != 1 { 1 } else { 0 })),
         }
     }
 
@@ -116,7 +114,10 @@ impl Catalog {
     /// Returns the singular translation of `msg_id` from the given catalog
     /// or `msg_id` itself if a translation does not exist.
     pub fn gettext<'a>(&'a self, msg_id: &'a str) -> &'a str {
-        self.strings.get(msg_id).and_then(|msg| msg.get_translated(0)).unwrap_or(msg_id)
+        self.strings
+            .get(msg_id)
+            .and_then(|msg| msg.get_translated(0))
+            .unwrap_or(msg_id)
     }
 
     /// Returns the plural translation of `msg_id` from the given catalog
@@ -129,9 +130,9 @@ impl Catalog {
         let form_no = self.resolver.resolve(n);
 
         match self.strings.get(msg_id) {
-            Some(msg) => {
-                msg.get_translated(form_no).unwrap_or_else(|| [msg_id, msg_id_plural][form_no])
-            }
+            Some(msg) => msg
+                .get_translated(form_no)
+                .unwrap_or_else(|| [msg_id, msg_id_plural][form_no]),
             None if n == 1 => msg_id,
             None if n != 1 => msg_id_plural,
             _ => unreachable!(),
@@ -144,7 +145,10 @@ impl Catalog {
     // TODO: DRY gettext/pgettext
     pub fn pgettext<'a>(&'a self, msg_context: &'a str, msg_id: &'a str) -> &'a str {
         let key = key_with_context(msg_context, &msg_id);
-        self.strings.get(&key).and_then(|msg| msg.get_translated(0)).unwrap_or(msg_id)
+        self.strings
+            .get(&key)
+            .and_then(|msg| msg.get_translated(0))
+            .unwrap_or(msg_id)
     }
 
     /// Returns the plural translation of `msg_id`
@@ -155,18 +159,19 @@ impl Catalog {
     ///
     /// Currently, the only supported plural formula is `n != 1`.
     // TODO: DRY ngettext/npgettext
-    pub fn npgettext<'a>(&'a self,
-                         msg_context: &'a str,
-                         msg_id: &'a str,
-                         msg_id_plural: &'a str,
-                         n: u64)
-                         -> &'a str {
+    pub fn npgettext<'a>(
+        &'a self,
+        msg_context: &'a str,
+        msg_id: &'a str,
+        msg_id_plural: &'a str,
+        n: u64,
+    ) -> &'a str {
         let key = key_with_context(msg_context, &msg_id);
         let form_no = self.resolver.resolve(n);
         match self.strings.get(&key) {
-            Some(msg) => {
-                msg.get_translated(form_no).unwrap_or_else(|| [msg_id, msg_id_plural][form_no])
-            }
+            Some(msg) => msg
+                .get_translated(form_no)
+                .unwrap_or_else(|| [msg_id, msg_id_plural][form_no]),
             None if n == 1 => msg_id,
             None if n != 1 => msg_id_plural,
             _ => unreachable!(),
@@ -245,18 +250,28 @@ fn catalog_pgettext() {
 #[test]
 fn catalog_npgettext() {
     let mut cat = Catalog::new();
-    cat.insert(Message::new("Text", Some("unit test"), vec!["Tekstas", "Tekstai"]));
+    cat.insert(Message::new(
+        "Text",
+        Some("unit test"),
+        vec!["Tekstas", "Tekstai"],
+    ));
 
     assert_eq!(cat.npgettext("unit test", "Text", "Texts", 1), "Tekstas");
     assert_eq!(cat.npgettext("unit test", "Text", "Texts", 0), "Tekstai");
     assert_eq!(cat.npgettext("unit test", "Text", "Texts", 2), "Tekstai");
 
-    assert_eq!(cat.npgettext("integration test", "Text", "Texts", 1),
-               "Text");
-    assert_eq!(cat.npgettext("integration test", "Text", "Texts", 0),
-               "Texts");
-    assert_eq!(cat.npgettext("integration test", "Text", "Texts", 2),
-               "Texts");
+    assert_eq!(
+        cat.npgettext("integration test", "Text", "Texts", 1),
+        "Text"
+    );
+    assert_eq!(
+        cat.npgettext("integration test", "Text", "Texts", 0),
+        "Texts"
+    );
+    assert_eq!(
+        cat.npgettext("integration test", "Text", "Texts", 2),
+        "Texts"
+    );
 }
 
 #[cfg(test)]
@@ -273,7 +288,11 @@ fn lithuanian_plural(n: u64) -> usize {
 #[test]
 fn catalog_ngettext_resolver() {
     let mut cat = Catalog::new();
-    cat.insert(Message::new("Garlic", None, vec!["Česnakas", "Česnakai", "Česnakų"]));
+    cat.insert(Message::new(
+        "Garlic",
+        None,
+        vec!["Česnakas", "Česnakai", "Česnakų"],
+    ));
     // https://localization-guide.readthedocs.org/en/latest/l10n/pluralforms.html
     cat.resolver = Resolver::Function(Box::new(lithuanian_plural));
 
