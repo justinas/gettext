@@ -68,12 +68,12 @@ fn key_with_context(context: &str, key: &str) -> String {
 /// Catalog represents a set of translation strings
 /// parsed out of one MO file.
 #[derive(Debug)]
-pub struct Catalog {
+pub struct Catalog<'r> {
     strings: HashMap<String, Message>,
-    resolver: Resolver,
+    resolver: Resolver<'r>,
 }
 
-impl Catalog {
+impl<'r> Catalog<'r> {
     /// Creates a new, empty gettext catalog.
     fn new() -> Self {
         Catalog {
@@ -98,7 +98,6 @@ impl Catalog {
     /// let file = File::open("french.mo").unwrap();
     /// let catalog = Catalog::parse(file).unwrap();
     /// ```
-
     pub fn parse<R: Read>(reader: R) -> Result<Self, parser::Error> {
         ParseOptions::new().parse(reader)
     }
