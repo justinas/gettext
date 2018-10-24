@@ -305,3 +305,14 @@ fn catalog_ngettext_resolver() {
     }
     assert_eq!(cat.ngettext("Garlic", "Garlics", 21), "Česnakas");
 }
+
+#[test]
+fn test_complex_plural() {
+    let reader: &[u8] = include_bytes!("../test_cases/complex_plural.mo");
+    let cat = parser::parse_catalog(reader, ParseOptions::new()).unwrap();
+
+    for i in 0..500 {
+        println!("{} -> {}", i, cat.ngettext("Test", "Tests", i));
+    }
+    // assert_eq!(cat.ngettext("Garlic", "Garlics", 21), "Česnakas");
+}

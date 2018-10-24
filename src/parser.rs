@@ -12,7 +12,7 @@ use self::encoding::label::encoding_from_whatwg_label;
 use self::encoding::types::DecoderTrap::Strict;
 use self::encoding::types::EncodingRef;
 
-use super::plurals::Resolver;
+use super::plurals::{Ast, Resolver};
 use super::{Catalog, Message};
 use metadata::parse_metadata;
 
@@ -135,7 +135,10 @@ fn get_read_u32_fn(magic: &[u8]) -> Option<fn(&[u8]) -> u32> {
     }
 }
 
-pub fn parse_catalog<'a, R: io::Read>(mut file: R, opts: ParseOptions) -> Result<Catalog<'a>, Error> {
+pub fn parse_catalog<'a, R: io::Read>(
+    mut file: R,
+    opts: ParseOptions,
+) -> Result<Catalog<'a>, Error> {
     let mut contents = vec![];
     let n = try!(file.read_to_end(&mut contents));
     if n < 28 {
@@ -156,75 +159,72 @@ pub fn parse_catalog<'a, R: io::Read>(mut file: R, opts: ParseOptions) -> Result
     }
 
     let mut catalog = Catalog::new();
-    let resolver = match opts.force_plural {
-        Some(func) => Some(Resolver::Function(func)),
-        None => None,
-    };
+    let mut resolver = opts.force_plural.map(Resolver::Function);
     let mut encoding = opts.force_encoding.unwrap_or(utf8_encoding);
 
     for i in 0..num_strings {
-        let id;
-        let context;
-        let translated: Vec<String>;
         // Parse the original string
+        if n < off_otable + 8 {
+            return Err(Eof);
+        }
+        let len = read_u32(&contents[off_otable..off_otable + 4]) as usize;
+        let off = read_u32(&contents[off_otable + 4..off_otable + 8]) as usize;
+        // +1 compensates for the ending NUL byte which is not included in length
+        if n < off + len + 1 {
+            return Err(Eof);
+        }
+        let mut original = &contents[off..off + len + 1];
+        // check for context
+        let context = match original.iter().position(|x| *x == 4) {
+            Some(idx) => {
+                let ctx = &original[..idx];
+                original = &original[idx + 1..];
+                Some(try!(encoding.decode(ctx, Strict)))
+            }
+            None => None,
+        };
+        // extract msg_id singular, ignoring the plural
+        let id = match original
+            .iter()
+            .position(|x| *x == 0)
+            .map(|i| &original[..i])
         {
-            if n < off_otable + 8 {
-                return Err(Eof);
-            }
-            let len = read_u32(&contents[off_otable..off_otable + 4]) as usize;
-            let off = read_u32(&contents[off_otable + 4..off_otable + 8]) as usize;
-            // +1 compensates for the ending NUL byte which is not included in length
-            if n < off + len + 1 {
-                return Err(Eof);
-            }
-            let mut original = &contents[off..off + len + 1];
-            // check for context
-            context = match original.iter().position(|x| *x == 4) {
-                Some(idx) => {
-                    let ctx = &original[..idx];
-                    original = &original[idx + 1..];
-                    Some(try!(encoding.decode(ctx, Strict)))
-                }
-                None => None,
-            };
-            // extract msg_id singular, ignoring the plural
-            id = match original
-                .iter()
-                .position(|x| *x == 0)
-                .map(|i| &original[..i])
-            {
-                Some(b) => try!(encoding.decode(b, Strict)),
-                None => return Err(Eof),
-            };
-            if id == "" && i != 0 {
-                return Err(MisplacedMetadata);
-            }
+            Some(b) => try!(encoding.decode(b, Strict)),
+            None => return Err(Eof),
+        };
+        if id == "" && i != 0 {
+            return Err(MisplacedMetadata);
         }
 
         // Parse the translation strings
-        {
-            if n < off_ttable + 8 {
-                return Err(Eof);
+        if n < off_ttable + 8 {
+            return Err(Eof);
+        }
+        let len = read_u32(&contents[off_ttable..off_ttable + 4]) as usize;
+        let off = read_u32(&contents[off_ttable + 4..off_ttable + 8]) as usize;
+        // +1 compensates for the ending NUL byte which is not included in length
+        if n < off + len + 1 {
+            return Err(Eof);
+        }
+        let translated = try!(
+            (&contents[off..off + len])
+                .split(|x| *x == 0)
+                .map(|b| encoding.decode(b, Strict))
+                .collect::<Result<Vec<_>, _>>()
+        );
+        if id == "" {
+            let map = parse_metadata(&*translated[0]).unwrap();
+            if let (Some(c), None) = (map.charset(), opts.force_encoding) {
+                encoding = match encoding_from_whatwg_label(c) {
+                    Some(enc_ref) => enc_ref,
+                    None => return Err(UnknownEncoding),
+                }
             }
-            let len = read_u32(&contents[off_ttable..off_ttable + 4]) as usize;
-            let off = read_u32(&contents[off_ttable + 4..off_ttable + 8]) as usize;
-            // +1 compensates for the ending NUL byte which is not included in length
-            if n < off + len + 1 {
-                return Err(Eof);
-            }
-            translated = try!(
-                (&contents[off..off + len])
-                    .split(|x| *x == 0)
-                    .map(|b| encoding.decode(b, Strict))
-                    .collect::<Result<Vec<_>, _>>()
-            );
-            if id == "" {
-                let map = parse_metadata(&*translated[0]).unwrap();
-                if let (Some(c), None) = (map.charset(), opts.force_encoding) {
-                    encoding = match encoding_from_whatwg_label(c) {
-                        Some(enc_ref) => enc_ref,
-                        None => return Err(UnknownEncoding),
-                    }
+            match resolver {
+                Some(Resolver::Expr(_)) => {}
+                _ => {
+                    let plural_forms = map.plural_forms().1.to_owned();
+                    resolver = Some(Resolver::Expr(Box::new(Ast::parse(plural_forms.as_ref()))));
                 }
             }
         }
@@ -234,7 +234,6 @@ pub fn parse_catalog<'a, R: io::Read>(mut file: R, opts: ParseOptions) -> Result
         off_otable += 8;
         off_ttable += 8;
     }
-
     if let Some(r) = resolver {
         catalog.resolver = r;
     }
