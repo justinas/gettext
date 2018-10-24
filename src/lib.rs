@@ -56,7 +56,7 @@ use std::io::Read;
 use std::ops::Deref;
 
 pub use parser::{Error, ParseOptions};
-use plurals::Resolver::{self, Function};
+use plurals::*;
 
 fn key_with_context(context: &str, key: &str) -> String {
     let mut result = context.to_owned();
@@ -78,7 +78,7 @@ impl<'r> Catalog<'r> {
     fn new() -> Self {
         Catalog {
             strings: HashMap::new(),
-            resolver: Function(Box::new(|n| if n != 1 { 1 } else { 0 })),
+            resolver: Resolver::Expr(Box::new(Ast::parse("n != 1"))),
         }
     }
 
@@ -273,38 +273,6 @@ fn catalog_npgettext() {
     );
 }
 
-#[cfg(test)]
-fn lithuanian_plural(n: u64) -> usize {
-    if (n % 10) == 1 && (n % 100) != 11 {
-        0
-    } else if ((n % 10) >= 2) && ((n % 100) < 10 || (n % 100) >= 20) {
-        1
-    } else {
-        2
-    }
-}
-
-#[test]
-fn catalog_ngettext_resolver() {
-    let mut cat = Catalog::new();
-    cat.insert(Message::new(
-        "Garlic",
-        None,
-        vec!["Česnakas", "Česnakai", "Česnakų"],
-    ));
-    // https://localization-guide.readthedocs.org/en/latest/l10n/pluralforms.html
-    cat.resolver = Resolver::Function(Box::new(lithuanian_plural));
-
-    assert_eq!(cat.ngettext("Garlic", "Garlics", 0), "Česnakų");
-    assert_eq!(cat.ngettext("Garlic", "Garlics", 1), "Česnakas");
-    for i in 2..9 {
-        assert_eq!(cat.ngettext("Garlic", "Garlics", i), "Česnakai");
-    }
-    for i in 10..20 {
-        assert_eq!(cat.ngettext("Garlic", "Garlics", i), "Česnakų");
-    }
-    assert_eq!(cat.ngettext("Garlic", "Garlics", 21), "Česnakas");
-}
 
 #[test]
 fn test_complex_plural() {

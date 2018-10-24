@@ -88,7 +88,6 @@ impl From<Cow<'static, str>> for Error {
 #[derive(Default)]
 pub struct ParseOptions {
     force_encoding: Option<EncodingRef>,
-    force_plural: Option<Box<Fn(u64) -> usize + 'static>>,
 }
 
 impl ParseOptions {
@@ -109,16 +108,6 @@ impl ParseOptions {
     /// or UTF-8 if metadata is non-existent.
     pub fn force_encoding(mut self, encoding: EncodingRef) -> Self {
         self.force_encoding = Some(encoding);
-        self
-    }
-
-    /// Forces a use of the given plural formula
-    /// for deciding the proper plural form for a message.
-    /// If this option is not enabled,
-    /// the parser uses the default formula
-    /// (`n != 1`).
-    pub fn force_plural<T: Fn(u64) -> usize + 'static>(mut self, plural: T) -> Self {
-        self.force_plural = Some(Box::new(plural));
         self
     }
 }
@@ -159,7 +148,7 @@ pub fn parse_catalog<'a, R: io::Read>(
     }
 
     let mut catalog = Catalog::new();
-    let mut resolver = opts.force_plural.map(Resolver::Function);
+    let mut resolver = None;
     let mut encoding = opts.force_encoding.unwrap_or(utf8_encoding);
 
     for i in 0..num_strings {

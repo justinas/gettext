@@ -1,9 +1,7 @@
-use std::fmt;
-
 use self::Resolver::*;
+
+#[derive(Debug)]
 pub enum Resolver<'a> {
-    /// A function/closure manually supplied by the user.
-    Function(Box<Fn(u64) -> usize>),
     /// A boolean expression
     /// Use Ast::parse to get an Ast
     Expr(Box<Ast<'a>>),
@@ -209,19 +207,9 @@ impl<'a> Resolver<'a> {
     /// for `n` objects, as defined by the rule contained in this resolver.
     pub fn resolve(&self, n: u64) -> usize {
         match *self {
-            Function(ref func) => func(n),
             Expr(ref ast) => {
                 ast.resolve(n)
             },
-        }
-    }
-}
-
-impl<'a> fmt::Debug for Resolver<'a> {
-    fn fmt(&self, fmt: &mut fmt::Formatter) -> fmt::Result {
-        match *self {
-            Function(..) => fmt.write_str("Function(..)"),
-            Expr(ref ast) => fmt.write_fmt(format_args!("Expr({:?})", ast)),
         }
     }
 }
