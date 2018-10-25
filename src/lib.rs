@@ -67,7 +67,7 @@ fn key_with_context(context: &str, key: &str) -> String {
 
 /// Catalog represents a set of translation strings
 /// parsed out of one MO file.
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 pub struct Catalog<'r> {
     strings: HashMap<String, Message>,
     resolver: Resolver<'r>,
@@ -178,7 +178,7 @@ impl<'r> Catalog<'r> {
     }
 }
 
-#[derive(Debug, Eq, PartialEq)]
+#[derive(Clone, Debug, Eq, PartialEq)]
 struct Message {
     id: String,
     context: Option<String>,

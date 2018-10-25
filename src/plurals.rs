@@ -1,6 +1,6 @@
 use self::Resolver::*;
 
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 pub enum Resolver<'a> {
     /// A boolean expression
     /// Use Ast::parse to get an Ast
@@ -34,7 +34,7 @@ fn index_of<'b, 'c>(src: &'b str, pat: &'static str) -> Option<usize> {
 }
 
 use self::Ast::*;
-#[derive(Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq)]
 pub enum Ast<'a> {
     /// A ternary expression
     /// x ? a : b
