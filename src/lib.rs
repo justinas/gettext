@@ -68,12 +68,12 @@ fn key_with_context(context: &str, key: &str) -> String {
 /// Catalog represents a set of translation strings
 /// parsed out of one MO file.
 #[derive(Clone, Debug)]
-pub struct Catalog<'r> {
+pub struct Catalog {
     strings: HashMap<String, Message>,
-    resolver: Resolver<'r>,
+    resolver: Resolver,
 }
 
-impl<'r> Catalog<'r> {
+impl Catalog {
     /// Creates a new, empty gettext catalog.
     fn new() -> Self {
         Catalog {
