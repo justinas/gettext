@@ -66,6 +66,12 @@ pub enum Operator {
     Modulo,
 }
 
+#[derive(Debug, PartialEq)]
+pub enum ParseError {
+    UnexpectedToken,
+    InvalidTernary,
+}
+
 impl Ast {
     fn resolve(&self, n: u64) -> usize {
         match *self {
@@ -94,11 +100,11 @@ impl Ast {
         }
     }
 
-    pub fn parse<'a>(src: &'a str) -> Ast {
+    pub fn parse<'a>(src: &'a str) -> Result<Ast, ParseError> {
         Self::parse_parens(src.trim())
     }
 
-    fn parse_parens<'a>(src: &'a str) -> Ast {
+    fn parse_parens<'a>(src: &'a str) -> Result<Ast, ParseError> {
         if src.starts_with('(') && src.ends_with(')') {
             Ast::parse(src[1..src.len() - 1].trim())
         } else {
@@ -106,112 +112,114 @@ impl Ast {
         }
     }
 
-    fn parse_and<'a>(src: &'a str) -> Ast {
+    fn parse_and<'a>(src: &'a str) -> Result<Ast, ParseError> {
         if let Some(i) = index_of(src, "&&") {
-            Ast::Op(Operator::And, Box::new(Ast::parse(&src[0..i])), Box::new(Ast::parse(&src[i + 2..])))
+            Ok(Ast::Op(Operator::And, Box::new(Ast::parse(&src[0..i])?), Box::new(Ast::parse(&src[i + 2..])?)))
         } else {
             Self::parse_or(src)
         }
     }
 
-    fn parse_or<'a>(src: &'a str) -> Ast {
+    fn parse_or<'a>(src: &'a str) -> Result<Ast, ParseError> {
         if let Some(i) = index_of(src, "||") {
-            Ast::Op(Operator::Or, Box::new(Ast::parse(&src[0..i])), Box::new(Ast::parse(&src[i + 2..])))
+            Ok(Ast::Op(Operator::Or, Box::new(Ast::parse(&src[0..i])?), Box::new(Ast::parse(&src[i + 2..])?)))
         } else {
             Self::parse_ternary(src)
         }
     }
 
-    fn parse_ternary<'a>(src: &'a str) -> Ast {
+    fn parse_ternary<'a>(src: &'a str) -> Result<Ast, ParseError> {
         if let Some(i) = index_of(src, "?") {
             if let Some(l) = index_of(src, ":") {
-                Ast::Ternary(
-                    Box::new(Ast::parse(&src[0..i])),
-                    Box::new(Ast::parse(&src[i + 1..l])),
-                    Box::new(Ast::parse(&src[l + 1..]))
-                )
+                Ok(Ast::Ternary(
+                    Box::new(Ast::parse(&src[0..i])?),
+                    Box::new(Ast::parse(&src[i + 1..l])?),
+                    Box::new(Ast::parse(&src[l + 1..])?),
+                ))
             } else {
-                panic!("Incorrect ternary expression, expected `:`")
+                Err(ParseError::InvalidTernary)
             }
         } else {
             Self::parse_ge(src)
         }
     }
 
-    fn parse_ge<'a>(src: &'a str) -> Ast {
+    fn parse_ge<'a>(src: &'a str) -> Result<Ast, ParseError> {
         if let Some(i) = index_of(src, ">=") {
-            Ast::Op(Operator::GreaterOrEqual, Box::new(Ast::parse(&src[0..i])), Box::new(Ast::parse(&src[i + 2..])))
+            Ok(Ast::Op(Operator::GreaterOrEqual, Box::new(Ast::parse(&src[0..i])?), Box::new(Ast::parse(&src[i + 2..])?)))
         } else {
             Self::parse_gt(src)
         }
     }
 
-    fn parse_gt<'a>(src: &'a str) -> Ast {
+    fn parse_gt<'a>(src: &'a str) -> Result<Ast, ParseError> {
         if let Some(i) = index_of(src, ">") {
-            Ast::Op(Operator::Greater, Box::new(Ast::parse(&src[0..i])), Box::new(Ast::parse(&src[i + 1..])))
+            Ok(Ast::Op(Operator::Greater, Box::new(Ast::parse(&src[0..i])?), Box::new(Ast::parse(&src[i + 1..])?)))
         } else {
             Self::parse_le(src)
         }
     }
 
-    fn parse_le<'a>(src: &'a str) -> Ast {
+    fn parse_le<'a>(src: &'a str) -> Result<Ast, ParseError> {
         if let Some(i) = index_of(src, "<=") {
-            Ast::Op(Operator::SmallerOrEqual, Box::new(Ast::parse(&src[0..i])), Box::new(Ast::parse(&src[i + 2..])))
+            Ok(Ast::Op(Operator::SmallerOrEqual, Box::new(Ast::parse(&src[0..i])?), Box::new(Ast::parse(&src[i + 2..])?)))
         } else {
             Self::parse_lt(src)
         }
     }
 
-    fn parse_lt<'a>(src: &'a str) -> Ast {
+    fn parse_lt<'a>(src: &'a str) -> Result<Ast, ParseError> {
         if let Some(i) = index_of(src, "<") {
-            Ast::Op(Operator::Smaller, Box::new(Ast::parse(&src[0..i])), Box::new(Ast::parse(&src[i + 1..])))
+            Ok(Ast::Op(Operator::Smaller, Box::new(Ast::parse(&src[0..i])?), Box::new(Ast::parse(&src[i + 1..])?)))
         } else {
             Self::parse_eq(src)
         }
     }
 
-    fn parse_eq<'a>(src: &'a str) -> Ast {
+    fn parse_eq<'a>(src: &'a str) -> Result<Ast, ParseError> {
         if let Some(i) = index_of(src, "==") {
-            Ast::Op(Operator::Equal, Box::new(Ast::parse(&src[0..i])), Box::new(Ast::parse(&src[i + 2..])))
+            Ok(Ast::Op(Operator::Equal, Box::new(Ast::parse(&src[0..i])?), Box::new(Ast::parse(&src[i + 2..])?)))
         } else {
             Self::parse_neq(src)
         }
     }
 
-    fn parse_neq<'a>(src: &'a str) -> Ast {
+    fn parse_neq<'a>(src: &'a str) -> Result<Ast, ParseError> {
         if let Some(i) = index_of(src, "!=") {
-            Ast::Op(Operator::NotEqual, Box::new(Ast::parse(&src[0..i])), Box::new(Ast::parse(&src[i + 2..])))
+            Ok(Ast::Op(Operator::NotEqual, Box::new(Ast::parse(&src[0..i])?), Box::new(Ast::parse(&src[i + 2..])?)))
         } else {
             Self::parse_mod(src)
         }
     }
-    fn parse_mod<'a>(src: &'a str) -> Ast {
+    fn parse_mod<'a>(src: &'a str) -> Result<Ast, ParseError> {
         if let Some(i) = index_of(src, "%") {
-            Ast::Op(Operator::Modulo, Box::new(Ast::parse(&src[0..i])), Box::new(Ast::parse(&src[i + 1..])))
+            Ok(Ast::Op(Operator::Modulo, Box::new(Ast::parse(&src[0..i])?), Box::new(Ast::parse(&src[i + 1..])?)))
         } else {
             Self::parse_not(src.trim())
         }
     }
 
-    fn parse_not<'a>(src: &'a str) -> Ast {
+    fn parse_not<'a>(src: &'a str) -> Result<Ast, ParseError> {
         if index_of(src, "!") == Some(0) {
-            Ast::Not(Box::new(Ast::parse(&src[1..])))
+            Ok(Ast::Not(Box::new(Ast::parse(&src[1..])?)))
         } else {
             Self::parse_int(src.trim())
         }
     }
 
-    fn parse_int<'a>(src: &'a str) -> Ast {
-        u64::from_str_radix(src, 10)
-            .map(|x| Ast::Integer(x))
-            .unwrap_or_else(|_| Self::parse_n(src.trim()))
+    fn parse_int<'a>(src: &'a str) -> Result<Ast, ParseError> {
+        if let Ok(x) = u64::from_str_radix(src, 10) {
+            Ok(Ast::Integer(x))
+        } else {
+            Self::parse_n(src.trim())
+        }
     }
 
-    fn parse_n<'a>(src: &'a str) -> Ast {
+    fn parse_n<'a>(src: &'a str) -> Result<Ast, ParseError> {
         if src == "n" {
-            Ast::N
+            Ok(Ast::N)
         } else {
-            panic!("Unexpected token: {}", src)
+            Err(ParseError::UnexpectedToken)
         }
     }
 }
@@ -238,7 +246,7 @@ mod tests {
 
     #[test]
     fn test_parser() {
-        assert_eq!(Ast::parse("n == 42 ? n : 6 && n < 7"), Ast::Op(
+        assert_eq!(Ast::parse("n == 42 ? n : 6 && n < 7"), Ok(Ast::Op(
             Operator::And,
             Box::new(Ast::Ternary(
                 Box::new(Ast::Op(
@@ -254,11 +262,11 @@ mod tests {
                 Box::new(Ast::N),
                 Box::new(Ast::Integer(7))
             ))
-        ));
+        )));
 
-        assert_eq!(Ast::parse("(n)"), Ast::N);
+        assert_eq!(Ast::parse("(n)"), Ok(Ast::N));
 
-        assert_eq!(Ast::parse("(n == 1 || n == 2) ? 0 : 1"), Ast::Ternary(
+        assert_eq!(Ast::parse("(n == 1 || n == 2) ? 0 : 1"), Ok(Ast::Ternary(
             Box::new(Ast::Op(
                 Operator::Or,
                 Box::new(Ast::Op(
@@ -274,6 +282,6 @@ mod tests {
             )),
             Box::new(Ast::Integer(0)),
             Box::new(Ast::Integer(1))
-        ))
+        )))
     }
 }

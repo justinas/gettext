@@ -55,7 +55,7 @@ use std::collections::HashMap;
 use std::io::Read;
 use std::ops::Deref;
 
-pub use parser::{Error, ParseOptions};
+pub use parser::{default_resolver, Error, ParseOptions};
 use plurals::*;
 
 fn key_with_context(context: &str, key: &str) -> String {
@@ -78,7 +78,7 @@ impl Catalog {
     fn new() -> Self {
         Catalog {
             strings: HashMap::new(),
-            resolver: Resolver::Expr(Box::new(Ast::parse("n != 1"))),
+            resolver: Resolver::Function(Box::new(default_resolver)),
         }
     }
 
@@ -279,8 +279,10 @@ fn test_complex_plural() {
     let reader: &[u8] = include_bytes!("../test_cases/complex_plural.mo");
     let cat = parser::parse_catalog(reader, ParseOptions::new()).unwrap();
 
-    for i in 0..500 {
-        println!("{} -> {}", i, cat.ngettext("Test", "Tests", i));
+    assert_eq!(cat.ngettext("Test", "Tests", 0), "Plural 2");
+    assert_eq!(cat.ngettext("Test", "Tests", 1), "Singular");
+    assert_eq!(cat.ngettext("Test", "Tests", 2), "Plural 1");
+    for i in 3..20 {
+        assert_eq!(cat.ngettext("Test", "Tests", i), "Plural 2");
     }
-    // assert_eq!(cat.ngettext("Garlic", "Garlics", 21), "Česnakas");
 }

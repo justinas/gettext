@@ -222,7 +222,9 @@ pub fn parse_catalog<'a, R: io::Read>(
                 }
             }
             let plural_forms = map.plural_forms().1.to_owned();
-            resolver = Resolver::Expr(Box::new(Ast::parse(plural_forms.as_ref())));
+            if let Ok(ast) = Ast::parse(plural_forms.as_ref()) {
+                resolver = Resolver::Expr(Box::new(ast))
+            }
         }
 
         catalog.insert(Message::new(id, context, translated));
@@ -235,7 +237,14 @@ pub fn parse_catalog<'a, R: io::Read>(
     Ok(catalog)
 }
 
-fn default_resolver(n: u64) -> usize {
+/// The default plural resolver.
+///
+/// It will be used if not `Plural-Forms` header is found in the .mo file, and if
+/// `ParseOptions::force_plural` was not called.
+///
+/// It is valid for English and similar languages: plural will be used for any quantity
+/// different of 1.
+pub fn default_resolver(n: u64) -> usize {
     if n == 1 {
         0
     } else {
