@@ -5,9 +5,11 @@ pub enum Resolver {
     /// A boolean expression
     /// Use Ast::parse to get an Ast
     Expr(Box<Ast>),
+    /// A function
+    Function(Box<fn(u64) -> usize>)
 }
 
-
+/// Finds the index of a pattern, outside of parenthesis
 fn index_of<'a>(src: &'a str, pat: &'static str) -> Option<usize> {
    src.chars().fold((None, 0, 0, 0), |(match_index, i, n_matches, paren_level), ch| {
        if let Some(x) = match_index {
@@ -219,9 +221,8 @@ impl Resolver {
     /// for `n` objects, as defined by the rule contained in this resolver.
     pub fn resolve(&self, n: u64) -> usize {
         match *self {
-            Expr(ref ast) => {
-                ast.resolve(n)
-            },
+            Expr(ref ast) => ast.resolve(n),
+            Function(ref f) => f(n)
         }
     }
 }

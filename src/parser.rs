@@ -88,6 +88,7 @@ impl From<Cow<'static, str>> for Error {
 #[derive(Default)]
 pub struct ParseOptions {
     force_encoding: Option<EncodingRef>,
+    force_plural: Option<Box<fn(u64) -> usize>>,
 }
 
 impl ParseOptions {
@@ -108,6 +109,16 @@ impl ParseOptions {
     /// or UTF-8 if metadata is non-existent.
     pub fn force_encoding(mut self, encoding: EncodingRef) -> Self {
         self.force_encoding = Some(encoding);
+        self
+    }
+
+    /// Forces a use of the given plural formula
+    /// for deciding the proper plural form for a message.
+    /// If this option is not enabled,
+    /// the parser uses the default formula
+    /// (`n != 1`).
+    pub fn force_plural(mut self, plural: fn(u64) -> usize) -> Self {
+        self.force_plural = Some(Box::new(plural));
         self
     }
 }
@@ -148,7 +159,8 @@ pub fn parse_catalog<'a, R: io::Read>(
     }
 
     let mut catalog = Catalog::new();
-    let mut resolver = None;
+    let mut resolver = opts.force_plural.map(|f| Resolver::Function(f))
+        .unwrap_or(Resolver::Function(Box::new(default_resolver)));
     let mut encoding = opts.force_encoding.unwrap_or(utf8_encoding);
 
     for i in 0..num_strings {
@@ -209,13 +221,8 @@ pub fn parse_catalog<'a, R: io::Read>(
                     None => return Err(UnknownEncoding),
                 }
             }
-            match resolver {
-                Some(Resolver::Expr(_)) => {}
-                _ => {
-                    let plural_forms = map.plural_forms().1.to_owned();
-                    resolver = Some(Resolver::Expr(Box::new(Ast::parse(plural_forms.as_ref()))));
-                }
-            }
+            let plural_forms = map.plural_forms().1.to_owned();
+            resolver = Resolver::Expr(Box::new(Ast::parse(plural_forms.as_ref())));
         }
 
         catalog.insert(Message::new(id, context, translated));
@@ -223,11 +230,17 @@ pub fn parse_catalog<'a, R: io::Read>(
         off_otable += 8;
         off_ttable += 8;
     }
-    if let Some(r) = resolver {
-        catalog.resolver = r;
-    }
 
+    catalog.resolver = resolver;
     Ok(catalog)
+}
+
+fn default_resolver(n: u64) -> usize {
+    if n == 1 {
+        0
+    } else {
+        1
+    }
 }
 
 #[test]
