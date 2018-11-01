@@ -218,7 +218,7 @@ pub fn parse_catalog<'a, R: io::Read>(
                 .collect::<Result<Vec<_>, _>>()
         );
         if id == "" {
-            let map = parse_metadata(&*translated[0]).unwrap();
+            let map = parse_metadata(&*translated[0])?;
             if let (Some(c), None) = (map.charset(), opts.force_encoding) {
                 encoding = match encoding_from_whatwg_label(c) {
                     Some(enc_ref) => enc_ref,
