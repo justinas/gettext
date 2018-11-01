@@ -200,6 +200,12 @@ impl Message {
 }
 
 #[test]
+fn catalog_impls_send_sync() {
+    fn check<T: Send + Sync>(_: T) { };
+    check(Catalog::new());
+}
+
+#[test]
 fn catalog_insert() {
     let mut cat = Catalog::new();
     cat.insert(Message::new("thisisid", None, vec![]));
