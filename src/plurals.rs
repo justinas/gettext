@@ -1,12 +1,14 @@
+use parser::Error;
+
 use self::Resolver::*;
 
 #[derive(Clone, Debug)]
 pub enum Resolver {
     /// A boolean expression
     /// Use Ast::parse to get an Ast
-    Expr(Box<Ast>),
+    Expr(Ast),
     /// A function
-    Function(Box<fn(u64) -> usize>)
+    Function(fn(u64) -> usize)
 }
 
 /// Finds the index of a pattern, outside of parenthesis
@@ -66,12 +68,6 @@ pub enum Operator {
     Modulo,
 }
 
-#[derive(Debug, PartialEq)]
-pub enum ParseError {
-    UnexpectedToken,
-    InvalidTernary,
-}
-
 impl Ast {
     fn resolve(&self, n: u64) -> usize {
         match *self {
@@ -100,11 +96,11 @@ impl Ast {
         }
     }
 
-    pub fn parse<'a>(src: &'a str) -> Result<Ast, ParseError> {
+    pub fn parse<'a>(src: &'a str) -> Result<Ast, Error> {
         Self::parse_parens(src.trim())
     }
 
-    fn parse_parens<'a>(src: &'a str) -> Result<Ast, ParseError> {
+    fn parse_parens<'a>(src: &'a str) -> Result<Ast, Error> {
         if src.starts_with('(') && src.ends_with(')') {
             Ast::parse(src[1..src.len() - 1].trim())
         } else {
@@ -112,7 +108,7 @@ impl Ast {
         }
     }
 
-    fn parse_and<'a>(src: &'a str) -> Result<Ast, ParseError> {
+    fn parse_and<'a>(src: &'a str) -> Result<Ast, Error> {
         if let Some(i) = index_of(src, "&&") {
             Ok(Ast::Op(Operator::And, Box::new(Ast::parse(&src[0..i])?), Box::new(Ast::parse(&src[i + 2..])?)))
         } else {
@@ -120,7 +116,7 @@ impl Ast {
         }
     }
 
-    fn parse_or<'a>(src: &'a str) -> Result<Ast, ParseError> {
+    fn parse_or<'a>(src: &'a str) -> Result<Ast, Error> {
         if let Some(i) = index_of(src, "||") {
             Ok(Ast::Op(Operator::Or, Box::new(Ast::parse(&src[0..i])?), Box::new(Ast::parse(&src[i + 2..])?)))
         } else {
@@ -128,7 +124,7 @@ impl Ast {
         }
     }
 
-    fn parse_ternary<'a>(src: &'a str) -> Result<Ast, ParseError> {
+    fn parse_ternary<'a>(src: &'a str) -> Result<Ast, Error> {
         if let Some(i) = index_of(src, "?") {
             if let Some(l) = index_of(src, ":") {
                 Ok(Ast::Ternary(
@@ -137,14 +133,14 @@ impl Ast {
                     Box::new(Ast::parse(&src[l + 1..])?),
                 ))
             } else {
-                Err(ParseError::InvalidTernary)
+                Err(Error::PluralParsing)
             }
         } else {
             Self::parse_ge(src)
         }
     }
 
-    fn parse_ge<'a>(src: &'a str) -> Result<Ast, ParseError> {
+    fn parse_ge<'a>(src: &'a str) -> Result<Ast, Error> {
         if let Some(i) = index_of(src, ">=") {
             Ok(Ast::Op(Operator::GreaterOrEqual, Box::new(Ast::parse(&src[0..i])?), Box::new(Ast::parse(&src[i + 2..])?)))
         } else {
@@ -152,7 +148,7 @@ impl Ast {
         }
     }
 
-    fn parse_gt<'a>(src: &'a str) -> Result<Ast, ParseError> {
+    fn parse_gt<'a>(src: &'a str) -> Result<Ast, Error> {
         if let Some(i) = index_of(src, ">") {
             Ok(Ast::Op(Operator::Greater, Box::new(Ast::parse(&src[0..i])?), Box::new(Ast::parse(&src[i + 1..])?)))
         } else {
@@ -160,7 +156,7 @@ impl Ast {
         }
     }
 
-    fn parse_le<'a>(src: &'a str) -> Result<Ast, ParseError> {
+    fn parse_le<'a>(src: &'a str) -> Result<Ast, Error> {
         if let Some(i) = index_of(src, "<=") {
             Ok(Ast::Op(Operator::SmallerOrEqual, Box::new(Ast::parse(&src[0..i])?), Box::new(Ast::parse(&src[i + 2..])?)))
         } else {
@@ -168,7 +164,7 @@ impl Ast {
         }
     }
 
-    fn parse_lt<'a>(src: &'a str) -> Result<Ast, ParseError> {
+    fn parse_lt<'a>(src: &'a str) -> Result<Ast, Error> {
         if let Some(i) = index_of(src, "<") {
             Ok(Ast::Op(Operator::Smaller, Box::new(Ast::parse(&src[0..i])?), Box::new(Ast::parse(&src[i + 1..])?)))
         } else {
@@ -176,7 +172,7 @@ impl Ast {
         }
     }
 
-    fn parse_eq<'a>(src: &'a str) -> Result<Ast, ParseError> {
+    fn parse_eq<'a>(src: &'a str) -> Result<Ast, Error> {
         if let Some(i) = index_of(src, "==") {
             Ok(Ast::Op(Operator::Equal, Box::new(Ast::parse(&src[0..i])?), Box::new(Ast::parse(&src[i + 2..])?)))
         } else {
@@ -184,14 +180,14 @@ impl Ast {
         }
     }
 
-    fn parse_neq<'a>(src: &'a str) -> Result<Ast, ParseError> {
+    fn parse_neq<'a>(src: &'a str) -> Result<Ast, Error> {
         if let Some(i) = index_of(src, "!=") {
             Ok(Ast::Op(Operator::NotEqual, Box::new(Ast::parse(&src[0..i])?), Box::new(Ast::parse(&src[i + 2..])?)))
         } else {
             Self::parse_mod(src)
         }
     }
-    fn parse_mod<'a>(src: &'a str) -> Result<Ast, ParseError> {
+    fn parse_mod<'a>(src: &'a str) -> Result<Ast, Error> {
         if let Some(i) = index_of(src, "%") {
             Ok(Ast::Op(Operator::Modulo, Box::new(Ast::parse(&src[0..i])?), Box::new(Ast::parse(&src[i + 1..])?)))
         } else {
@@ -199,7 +195,7 @@ impl Ast {
         }
     }
 
-    fn parse_not<'a>(src: &'a str) -> Result<Ast, ParseError> {
+    fn parse_not<'a>(src: &'a str) -> Result<Ast, Error> {
         if index_of(src, "!") == Some(0) {
             Ok(Ast::Not(Box::new(Ast::parse(&src[1..])?)))
         } else {
@@ -207,7 +203,7 @@ impl Ast {
         }
     }
 
-    fn parse_int<'a>(src: &'a str) -> Result<Ast, ParseError> {
+    fn parse_int<'a>(src: &'a str) -> Result<Ast, Error> {
         if let Ok(x) = u64::from_str_radix(src, 10) {
             Ok(Ast::Integer(x))
         } else {
@@ -215,11 +211,11 @@ impl Ast {
         }
     }
 
-    fn parse_n<'a>(src: &'a str) -> Result<Ast, ParseError> {
+    fn parse_n<'a>(src: &'a str) -> Result<Ast, Error> {
         if src == "n" {
             Ok(Ast::N)
         } else {
-            Err(ParseError::UnexpectedToken)
+            Err(Error::PluralParsing)
         }
     }
 }
@@ -241,12 +237,12 @@ mod tests {
 
     #[test]
     fn test_expr_resolver() {
-        assert_eq!(Expr(Box::new(N)).resolve(42), 42);
+        assert_eq!(Expr(N).resolve(42), 42);
     }
 
     #[test]
     fn test_parser() {
-        assert_eq!(Ast::parse("n == 42 ? n : 6 && n < 7"), Ok(Ast::Op(
+        assert_eq!(Ast::parse("n == 42 ? n : 6 && n < 7").expect("Invalid plural"), Ast::Op(
             Operator::And,
             Box::new(Ast::Ternary(
                 Box::new(Ast::Op(
@@ -262,11 +258,11 @@ mod tests {
                 Box::new(Ast::N),
                 Box::new(Ast::Integer(7))
             ))
-        )));
+        ));
 
-        assert_eq!(Ast::parse("(n)"), Ok(Ast::N));
+        assert_eq!(Ast::parse("(n)").expect("Invalid plural"), Ast::N);
 
-        assert_eq!(Ast::parse("(n == 1 || n == 2) ? 0 : 1"), Ok(Ast::Ternary(
+        assert_eq!(Ast::parse("(n == 1 || n == 2) ? 0 : 1").expect("Invalid plural"), Ast::Ternary(
             Box::new(Ast::Op(
                 Operator::Or,
                 Box::new(Ast::Op(
@@ -282,6 +278,6 @@ mod tests {
             )),
             Box::new(Ast::Integer(0)),
             Box::new(Ast::Integer(1))
-        )))
+        ))
     }
 }

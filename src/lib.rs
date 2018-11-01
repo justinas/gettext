@@ -78,7 +78,7 @@ impl Catalog {
     fn new() -> Self {
         Catalog {
             strings: HashMap::new(),
-            resolver: Resolver::Function(Box::new(default_resolver)),
+            resolver: Resolver::Function(default_resolver),
         }
     }
 

@@ -36,6 +36,8 @@ pub enum Error {
     MisplacedMetadata,
     /// An unknown encoding was specified in the metadata
     UnknownEncoding,
+    /// Invalid Plural-Forms metadata
+    PluralParsing,
 }
 use Error::*;
 
@@ -49,6 +51,7 @@ impl error::Error for Error {
             MalformedMetadata => "metadata syntax error",
             MisplacedMetadata => "misplaced metadata",
             UnknownEncoding => "unknown encoding specified",
+            PluralParsing => "invalid plural expression",
         }
     }
 }
@@ -88,7 +91,7 @@ impl From<Cow<'static, str>> for Error {
 #[derive(Default)]
 pub struct ParseOptions {
     force_encoding: Option<EncodingRef>,
-    force_plural: Option<Box<fn(u64) -> usize>>,
+    force_plural: Option<fn(u64) -> usize>,
 }
 
 impl ParseOptions {
@@ -118,7 +121,7 @@ impl ParseOptions {
     /// the parser uses the default formula
     /// (`n != 1`).
     pub fn force_plural(mut self, plural: fn(u64) -> usize) -> Self {
-        self.force_plural = Some(Box::new(plural));
+        self.force_plural = Some(plural);
         self
     }
 }
@@ -159,8 +162,9 @@ pub fn parse_catalog<'a, R: io::Read>(
     }
 
     let mut catalog = Catalog::new();
-    let mut resolver = opts.force_plural.map(|f| Resolver::Function(f))
-        .unwrap_or(Resolver::Function(Box::new(default_resolver)));
+    if let Some(f) = opts.force_plural {
+        catalog.resolver = Resolver::Function(f);
+    }
     let mut encoding = opts.force_encoding.unwrap_or(utf8_encoding);
 
     for i in 0..num_strings {
@@ -221,9 +225,10 @@ pub fn parse_catalog<'a, R: io::Read>(
                     None => return Err(UnknownEncoding),
                 }
             }
-            let plural_forms = map.plural_forms().1.to_owned();
-            if let Ok(ast) = Ast::parse(plural_forms.as_ref()) {
-                resolver = Resolver::Expr(Box::new(ast))
+            if opts.force_plural.is_none() {
+                if let Some(p) = map.plural_forms().1 {
+                    catalog.resolver = Ast::parse(p).map(Resolver::Expr)?;
+                }
             }
         }
 
@@ -233,7 +238,6 @@ pub fn parse_catalog<'a, R: io::Read>(
         off_ttable += 8;
     }
 
-    catalog.resolver = resolver;
     Ok(catalog)
 }
 
