@@ -34,10 +34,10 @@ pub enum Error {
     MalformedMetadata,
     /// Meta information string was not the first string in the catalog
     MisplacedMetadata,
-    /// An unknown encoding was specified in the metadata
-    UnknownEncoding,
     /// Invalid Plural-Forms metadata
     PluralParsing,
+    /// An unknown encoding was specified in the metadata
+    UnknownEncoding,
 }
 use Error::*;
 
