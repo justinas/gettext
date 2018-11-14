@@ -109,3 +109,16 @@ fn test_lt_plural() {
         assert_eq!(cat.ngettext("Garlic", "Garlics", 21), "Česnakas");
     }
 }
+
+#[test]
+fn test_complex_plural() {
+    let reader: &[u8] = include_bytes!("../test_cases/complex_plural.mo");
+    let cat = ParseOptions::new().parse(reader).unwrap();
+
+    assert_eq!(cat.ngettext("Test", "Tests", 0), "Plural 2");
+    assert_eq!(cat.ngettext("Test", "Tests", 1), "Singular");
+    assert_eq!(cat.ngettext("Test", "Tests", 2), "Plural 1");
+    for i in 3..20 {
+        assert_eq!(cat.ngettext("Test", "Tests", i), "Plural 2");
+    }
+}
