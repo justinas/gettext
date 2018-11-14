@@ -55,7 +55,8 @@ use std::collections::HashMap;
 use std::io::Read;
 use std::ops::Deref;
 
-pub use parser::{default_resolver, Error, ParseOptions};
+use parser::default_resolver;
+pub use parser::{Error, ParseOptions};
 use plurals::*;
 
 fn key_with_context(context: &str, key: &str) -> String {
