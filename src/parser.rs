@@ -140,7 +140,7 @@ fn get_read_u32_fn(magic: &[u8]) -> Option<fn(&[u8]) -> u32> {
 
 pub fn parse_catalog<'a, R: io::Read>(mut file: R, opts: ParseOptions) -> Result<Catalog, Error> {
     let mut contents = vec![];
-    let n = try!(file.read_to_end(&mut contents));
+    let n = file.read_to_end(&mut contents)?;
     if n < 28 {
         return Err(Eof);
     }
@@ -181,7 +181,7 @@ pub fn parse_catalog<'a, R: io::Read>(mut file: R, opts: ParseOptions) -> Result
             Some(idx) => {
                 let ctx = &original[..idx];
                 original = &original[idx + 1..];
-                Some(try!(encoding.decode(ctx, Strict)))
+                Some(encoding.decode(ctx, Strict)?)
             }
             None => None,
         };
@@ -191,7 +191,7 @@ pub fn parse_catalog<'a, R: io::Read>(mut file: R, opts: ParseOptions) -> Result
             .position(|x| *x == 0)
             .map(|i| &original[..i])
         {
-            Some(b) => try!(encoding.decode(b, Strict)),
+            Some(b) => encoding.decode(b, Strict)?,
             None => return Err(Eof),
         };
         if id == "" && i != 0 {
@@ -208,12 +208,10 @@ pub fn parse_catalog<'a, R: io::Read>(mut file: R, opts: ParseOptions) -> Result
         if n < off + len + 1 {
             return Err(Eof);
         }
-        let translated = try!(
-            (&contents[off..off + len])
-                .split(|x| *x == 0)
-                .map(|b| encoding.decode(b, Strict))
-                .collect::<Result<Vec<_>, _>>()
-        );
+        let translated = contents[off..off + len]
+            .split(|x| *x == 0)
+            .map(|b| encoding.decode(b, Strict))
+            .collect::<Result<Vec<_>, _>>()?;
         if id == "" {
             let map = parse_metadata(&*translated[0])?;
             if let (Some(c), None) = (map.charset(), opts.force_encoding) {
