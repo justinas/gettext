@@ -127,11 +127,9 @@ impl Catalog {
     /// Currently, the only supported plural formula is `n != 1`.
     pub fn ngettext<'a>(&'a self, msg_id: &'a str, msg_id_plural: &'a str, n: u64) -> &'a str {
         let form_no = self.resolver.resolve(n);
-
-        match self.strings.get(msg_id) {
-            Some(msg) => msg
-                .get_translated(form_no)
-                .unwrap_or_else(|| [msg_id, msg_id_plural][form_no]),
+        let message = self.strings.get(msg_id);
+        match message.and_then(|m| m.get_translated(form_no)) {
+            Some(msg) => msg,
             None if n == 1 => msg_id,
             None if n != 1 => msg_id_plural,
             _ => unreachable!(),
@@ -167,10 +165,9 @@ impl Catalog {
     ) -> &'a str {
         let key = key_with_context(msg_context, &msg_id);
         let form_no = self.resolver.resolve(n);
-        match self.strings.get(&key) {
-            Some(msg) => msg
-                .get_translated(form_no)
-                .unwrap_or_else(|| [msg_id, msg_id_plural][form_no]),
+        let message = self.strings.get(&key);
+        match message.and_then(|m| m.get_translated(form_no)) {
+            Some(msg) => msg,
             None if n == 1 => msg_id,
             None if n != 1 => msg_id_plural,
             _ => unreachable!(),
@@ -201,7 +198,7 @@ impl Message {
 
 #[test]
 fn catalog_impls_send_sync() {
-    fn check<T: Send + Sync>(_: T) { };
+    fn check<T: Send + Sync>(_: T) {};
     check(Catalog::new());
 }
 
@@ -245,6 +242,38 @@ fn catalog_ngettext() {
 }
 
 #[test]
+fn catalog_ngettext_not_enough_forms_in_message() {
+    fn resolver(count: u64) -> usize {
+        count as usize
+    }
+
+    let mut cat = Catalog::new();
+    cat.insert(Message::new("Text", None, vec!["Tekstas", "Tekstai"]));
+    cat.resolver = Resolver::Function(resolver);
+    assert_eq!(cat.ngettext("Text", "Texts", 0), "Tekstas");
+    assert_eq!(cat.ngettext("Text", "Texts", 1), "Tekstai");
+    assert_eq!(cat.ngettext("Text", "Texts", 2), "Texts");
+}
+
+#[test]
+fn catalog_npgettext_not_enough_forms_in_message() {
+    fn resolver(count: u64) -> usize {
+        count as usize
+    }
+
+    let mut cat = Catalog::new();
+    cat.insert(Message::new(
+        "Text",
+        Some("ctx"),
+        vec!["Tekstas", "Tekstai"],
+    ));
+    cat.resolver = Resolver::Function(resolver);
+    assert_eq!(cat.npgettext("ctx", "Text", "Texts", 0), "Tekstas");
+    assert_eq!(cat.npgettext("ctx", "Text", "Texts", 1), "Tekstai");
+    assert_eq!(cat.npgettext("ctx", "Text", "Texts", 2), "Texts");
+}
+
+#[test]
 fn catalog_pgettext() {
     let mut cat = Catalog::new();
     cat.insert(Message::new("Text", Some("unit test"), vec!["Tekstas"]));
@@ -278,7 +307,6 @@ fn catalog_npgettext() {
         "Texts"
     );
 }
-
 
 #[test]
 fn test_complex_plural() {
