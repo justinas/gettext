@@ -145,10 +145,7 @@ pub fn parse_catalog<'a, R: io::Read>(mut file: R, opts: ParseOptions) -> Result
         return Err(Eof);
     }
 
-    let read_u32 = match get_read_u32_fn(&contents[0..4]) {
-        Some(f) => f,
-        None => return Err(BadMagic),
-    };
+    let read_u32 = get_read_u32_fn(&contents[0..4]).ok_or(BadMagic)?;
 
     // ignore hashing tables (bytes at 20..28)
     let num_strings = read_u32(&contents[8..12]) as usize;
@@ -215,10 +212,7 @@ pub fn parse_catalog<'a, R: io::Read>(mut file: R, opts: ParseOptions) -> Result
         if id == "" {
             let map = parse_metadata(&*translated[0])?;
             if let (Some(c), None) = (map.charset(), opts.force_encoding) {
-                encoding = match encoding_from_whatwg_label(c) {
-                    Some(enc_ref) => enc_ref,
-                    None => return Err(UnknownEncoding),
-                }
+                encoding = encoding_from_whatwg_label(c).ok_or(UnknownEncoding)?;
             }
             if opts.force_plural.is_none() {
                 if let Some(p) = map.plural_forms().1 {
