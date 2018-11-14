@@ -21,21 +21,22 @@ impl<'a> MetadataMap<'a> {
     /// Defaults to `n_plurals = 2` and `plural = n!=1` (as in English).
     pub fn plural_forms(&self) -> (Option<usize>, Option<&'a str>) {
         self.get("Plural-Forms")
-            .map(|f| f.split(';').fold((None, None), |(n_pl, pl), prop| {
-                match prop.chars().position(|c| c == '=') {
-                    Some(index) => {
-                        let (name, value) = prop.split_at(index);
-                        let value = value[1..value.len()].trim();
-                        match name.trim() {
-                            "n_plurals" => (usize::from_str_radix(value, 10).ok(), pl),
-                            "plural" => (n_pl, Some(value)),
-                            _ => (n_pl, pl)
+            .map(|f| {
+                f.split(';').fold((None, None), |(n_pl, pl), prop| {
+                    match prop.chars().position(|c| c == '=') {
+                        Some(index) => {
+                            let (name, value) = prop.split_at(index);
+                            let value = value[1..value.len()].trim();
+                            match name.trim() {
+                                "n_plurals" => (usize::from_str_radix(value, 10).ok(), pl),
+                                "plural" => (n_pl, Some(value)),
+                                _ => (n_pl, pl),
+                            }
                         }
-                    },
-                    None => (n_pl, pl)
-                }
-            }))
-            .unwrap_or((None, None))
+                        None => (n_pl, pl),
+                    }
+                })
+            }).unwrap_or((None, None))
     }
 }
 
