@@ -124,8 +124,6 @@ impl Catalog {
     /// with the correct plural form for the number `n` of objects.
     /// Returns msg_id if a translation does not exist and `n == 1`,
     /// msg_id_plural otherwise.
-    ///
-    /// Currently, the only supported plural formula is `n != 1`.
     pub fn ngettext<'a>(&'a self, msg_id: &'a str, msg_id_plural: &'a str, n: u64) -> &'a str {
         let form_no = self.resolver.resolve(n);
         let message = self.strings.get(msg_id);
@@ -154,8 +152,6 @@ impl Catalog {
     /// with the correct plural form for the number `n` of objects.
     /// Returns msg_id if a translation does not exist and `n == 1`,
     /// msg_id_plural otherwise.
-    ///
-    /// Currently, the only supported plural formula is `n != 1`.
     // TODO: DRY ngettext/npgettext
     pub fn npgettext<'a>(
         &'a self,
