@@ -38,7 +38,8 @@ fn index_of<'a>(src: &'a str, pat: &'static str) -> Option<usize> {
                     }
                 }
             },
-        ).0
+        )
+        .0
 }
 
 use self::Ast::*;
@@ -75,11 +76,13 @@ pub enum Operator {
 impl Ast {
     fn resolve(&self, n: u64) -> usize {
         match *self {
-            Ternary(ref cond, ref ok, ref nok) => if cond.resolve(n) == 0 {
-                nok.resolve(n)
-            } else {
-                ok.resolve(n)
-            },
+            Ternary(ref cond, ref ok, ref nok) => {
+                if cond.resolve(n) == 0 {
+                    nok.resolve(n)
+                } else {
+                    ok.resolve(n)
+                }
+            }
             N => n as usize,
             Integer(x) => x as usize,
             Op(ref op, ref lhs, ref rhs) => match *op {
@@ -105,8 +108,29 @@ impl Ast {
     }
 
     fn parse_parens<'a>(src: &'a str) -> Result<Ast, Error> {
-        if src.starts_with('(') && src.ends_with(')') {
-            Ast::parse(src[1..src.len() - 1].trim())
+        if src.starts_with('(') {
+            let end = src[1..src.len() - 1].chars().fold((1, 2), |(level, index), ch| {
+                if level > 0 {
+                    if ch == ')' {
+                        (level - 1, index + 1)
+                    } else if ch == '(' {
+                        (level + 1, index + 1)
+                    } else {
+                        (level, index + 1)
+                    }
+                } else {
+                    if ch == '(' {
+                        (level + 1, index + 1)
+                    } else {
+                        (level, index)
+                    }
+                }
+            }).1;
+            if end == src.len() {
+                Ast::parse(src[1..src.len() - 1].trim())
+            } else {
+                Ast::parse_and(src.trim())
+            }
         } else {
             Ast::parse_and(src.trim())
         }
@@ -324,6 +348,9 @@ mod tests {
                 Box::new(Ast::Integer(0)),
                 Box::new(Ast::Integer(1))
             )
-        )
+        );
+
+        let ru_plural = "((n%10==1 && n%100!=11) ? 0 : ((n%10 >= 2 && n%10 <=4 && (n%100 < 12 || n%100 > 14)) ? 1 : ((n%10 == 0 || (n%10 >= 5 && n%10 <=9)) || (n%100 >= 11 && n%100 <= 14)) ? 2 : 3))";
+        assert!(Ast::parse(ru_plural).is_ok());
     }
 }
