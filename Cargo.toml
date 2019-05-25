@@ -6,6 +6,7 @@ description = "An implementation of Gettext translation framework for Rust"
 license = "MIT"
 repository = "https://github.com/justinas/gettext"
 readme = "README.md"
+edition = "2018"
 
 [dependencies]
 byteorder = "1.3"

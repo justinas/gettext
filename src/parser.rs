@@ -1,20 +1,17 @@
-extern crate byteorder;
-extern crate encoding;
-
 use std::borrow::Cow;
 use std::default::Default;
 use std::error;
 use std::fmt;
 use std::io;
 
-use self::byteorder::{BigEndian, ByteOrder, LittleEndian};
-use self::encoding::label::encoding_from_whatwg_label;
-use self::encoding::types::DecoderTrap::Strict;
-use self::encoding::types::EncodingRef;
+use byteorder::{BigEndian, ByteOrder, LittleEndian};
+use encoding::label::encoding_from_whatwg_label;
+use encoding::types::DecoderTrap::Strict;
+use encoding::types::EncodingRef;
 
-use super::plurals::{Ast, Resolver};
-use super::{Catalog, Message};
-use metadata::parse_metadata;
+use crate::plurals::{Ast, Resolver};
+use crate::{Catalog, Message};
+use crate::metadata::parse_metadata;
 
 #[allow(non_upper_case_globals)]
 static utf8_encoding: EncodingRef = &encoding::codec::utf_8::UTF8Encoding;
