@@ -75,6 +75,13 @@ pub struct Catalog {
 }
 
 impl Catalog {
+    /// Creates an empty catalog.
+    ///
+    /// All the translated strings will be the same as the original ones.
+    pub fn empty() -> Self {
+        Self::new()
+    }
+
     /// Creates a new, empty gettext catalog.
     fn new() -> Self {
         Catalog {
