@@ -20,7 +20,6 @@
 //! # Example
 //!
 //! ```ignore
-//! extern crate gettext;
 //!
 //! use std::fs::File;
 //! use gettext::Catalog;

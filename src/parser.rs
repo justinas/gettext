@@ -1,5 +1,5 @@
-extern crate byteorder;
-extern crate encoding;
+use byteorder;
+use encoding;
 
 use std::borrow::Cow;
 use std::default::Default;
@@ -80,8 +80,6 @@ impl From<Cow<'static, str>> for Error {
 /// # Examples
 /// ```ignore
 /// use std::fs::File;
-///
-/// extern crate encoding;
 /// use encoding::all::ISO_8859_1;
 ///
 /// let file = File::open("french.mo").unwrap();
