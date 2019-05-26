@@ -1,6 +1,3 @@
-extern crate encoding;
-extern crate gettext;
-
 use encoding::label::encoding_from_whatwg_label;
 use gettext::{Catalog, ParseOptions};
 

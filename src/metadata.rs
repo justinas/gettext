@@ -2,7 +2,7 @@ use std::collections::HashMap;
 use std::ops::{Deref, DerefMut};
 
 use super::Error;
-use Error::MalformedMetadata;
+use crate::Error::MalformedMetadata;
 
 #[derive(Debug)]
 pub struct MetadataMap<'a>(HashMap<&'a str, &'a str>);

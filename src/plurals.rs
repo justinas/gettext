@@ -1,4 +1,4 @@
-use parser::Error;
+use crate::parser::Error;
 
 use self::Resolver::*;
 

@@ -20,7 +20,6 @@
 //! # Example
 //!
 //! ```ignore
-//! extern crate gettext;
 //!
 //! use std::fs::File;
 //! use gettext::Catalog;
@@ -55,9 +54,9 @@ use std::collections::HashMap;
 use std::io::Read;
 use std::ops::Deref;
 
-use parser::default_resolver;
-pub use parser::{Error, ParseOptions};
-use plurals::*;
+use crate::parser::default_resolver;
+pub use crate::parser::{Error, ParseOptions};
+use crate::plurals::*;
 
 fn key_with_context(context: &str, key: &str) -> String {
     let mut result = context.to_owned();
