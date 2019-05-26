@@ -14,7 +14,7 @@ use self::encoding::types::EncodingRef;
 
 use super::plurals::{Ast, Resolver};
 use super::{Catalog, Message};
-use metadata::parse_metadata;
+use crate::metadata::parse_metadata;
 
 #[allow(non_upper_case_globals)]
 static utf8_encoding: EncodingRef = &encoding::codec::utf_8::UTF8Encoding;
@@ -39,7 +39,7 @@ pub enum Error {
     /// An unknown encoding was specified in the metadata
     UnknownEncoding,
 }
-use Error::*;
+use crate::Error::*;
 
 impl error::Error for Error {
     fn description(&self) -> &str {
