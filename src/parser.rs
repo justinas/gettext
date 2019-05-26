@@ -36,7 +36,7 @@ pub enum Error {
     /// An unknown encoding was specified in the metadata
     UnknownEncoding,
 }
-use Error::*;
+use crate::parser::Error::*;
 
 impl error::Error for Error {
     fn description(&self) -> &str {
