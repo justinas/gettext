@@ -113,8 +113,8 @@ impl ParseOptions {
     /// Forces a use of the given plural formula
     /// for deciding the proper plural form for a message.
     /// If this option is not enabled,
-    /// the parser uses the default formula
-    /// (`n != 1`).
+    /// the parser tries to use the plural formula specified in the metadata
+    /// or `n != 1` if metadata is non-existent.
     pub fn force_plural(mut self, plural: fn(u64) -> usize) -> Self {
         self.force_plural = Some(plural);
         self
