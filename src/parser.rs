@@ -242,28 +242,18 @@ pub fn default_resolver(n: u64) -> usize {
 
 #[test]
 fn test_get_read_u32_fn() {
-    use std::mem;
-
     assert!(get_read_u32_fn(&[]).is_none());
     assert!(get_read_u32_fn(&[0xde, 0x12, 0x04, 0x95, 0x00]).is_none());
 
     {
-        let le_ptr: *const ();
-        let ret_ptr;
-        unsafe {
-            le_ptr = mem::transmute(LittleEndian::read_u32 as usize);
-            ret_ptr = mem::transmute(get_read_u32_fn(&[0xde, 0x12, 0x04, 0x95]).unwrap());
-        }
+        let le_ptr = LittleEndian::read_u32 as *const ();
+        let ret_ptr = get_read_u32_fn(&[0xde, 0x12, 0x04, 0x95]).unwrap() as _;
         assert_eq!(le_ptr, ret_ptr);
     }
 
     {
-        let be_ptr: *const ();
-        let ret_ptr;
-        unsafe {
-            be_ptr = mem::transmute(BigEndian::read_u32 as usize);
-            ret_ptr = mem::transmute(get_read_u32_fn(&[0x95, 0x04, 0x12, 0xde]).unwrap());
-        }
+        let be_ptr = BigEndian::read_u32 as *const ();
+        let ret_ptr = get_read_u32_fn(&[0x95, 0x04, 0x12, 0xde]).unwrap() as _;
         assert_eq!(be_ptr, ret_ptr);
     }
 }
