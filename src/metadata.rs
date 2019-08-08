@@ -11,7 +11,7 @@ impl<'a> MetadataMap<'a> {
     /// Returns a string that indicates the character set.
     pub fn charset(&self) -> Option<&'a str> {
         self.get("Content-Type")
-            .and_then(|x| x.split("charset=").skip(1).next())
+            .and_then(|x| x.split("charset=").nth(1))
     }
 
     /// Returns the number of different plurals and the boolean

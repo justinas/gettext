@@ -133,7 +133,7 @@ fn get_read_u32_fn(magic: &[u8]) -> Option<fn(&[u8]) -> u32> {
     }
 }
 
-pub fn parse_catalog<'a, R: io::Read>(mut file: R, opts: ParseOptions) -> Result<Catalog, Error> {
+pub fn parse_catalog<R: io::Read>(mut file: R, opts: ParseOptions) -> Result<Catalog, Error> {
     let mut contents = vec![];
     let n = file.read_to_end(&mut contents)?;
     if n < 28 {
