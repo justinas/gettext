@@ -12,7 +12,7 @@ pub enum Resolver {
 }
 
 /// Finds the index of a pattern, outside of parenthesis
-fn index_of<'a>(src: &'a str, pat: &'static str) -> Option<usize> {
+fn index_of(src: &str, pat: &str) -> Option<usize> {
     src.chars()
         .fold(
             (None, 0, 0, 0),
@@ -103,11 +103,11 @@ impl Ast {
         }
     }
 
-    pub fn parse<'a>(src: &'a str) -> Result<Ast, Error> {
+    pub fn parse(src: &str) -> Result<Ast, Error> {
         Self::parse_parens(src.trim())
     }
 
-    fn parse_parens<'a>(src: &'a str) -> Result<Ast, Error> {
+    fn parse_parens(src: &str) -> Result<Ast, Error> {
         if src.starts_with('(') {
             let end = src[1..src.len() - 1]
                 .chars()
@@ -129,7 +129,7 @@ impl Ast {
         }
     }
 
-    fn parse_and<'a>(src: &'a str) -> Result<Ast, Error> {
+    fn parse_and(src: &str) -> Result<Ast, Error> {
         if let Some(i) = index_of(src, "&&") {
             Ok(Ast::Op(
                 Operator::And,
@@ -141,7 +141,7 @@ impl Ast {
         }
     }
 
-    fn parse_or<'a>(src: &'a str) -> Result<Ast, Error> {
+    fn parse_or(src: &str) -> Result<Ast, Error> {
         if let Some(i) = index_of(src, "||") {
             Ok(Ast::Op(
                 Operator::Or,
@@ -153,7 +153,7 @@ impl Ast {
         }
     }
 
-    fn parse_ternary<'a>(src: &'a str) -> Result<Ast, Error> {
+    fn parse_ternary(src: &str) -> Result<Ast, Error> {
         if let Some(i) = index_of(src, "?") {
             if let Some(l) = index_of(src, ":") {
                 Ok(Ast::Ternary(
@@ -169,7 +169,7 @@ impl Ast {
         }
     }
 
-    fn parse_ge<'a>(src: &'a str) -> Result<Ast, Error> {
+    fn parse_ge(src: &str) -> Result<Ast, Error> {
         if let Some(i) = index_of(src, ">=") {
             Ok(Ast::Op(
                 Operator::GreaterOrEqual,
@@ -181,7 +181,7 @@ impl Ast {
         }
     }
 
-    fn parse_gt<'a>(src: &'a str) -> Result<Ast, Error> {
+    fn parse_gt(src: &str) -> Result<Ast, Error> {
         if let Some(i) = index_of(src, ">") {
             Ok(Ast::Op(
                 Operator::Greater,
@@ -193,7 +193,7 @@ impl Ast {
         }
     }
 
-    fn parse_le<'a>(src: &'a str) -> Result<Ast, Error> {
+    fn parse_le(src: &str) -> Result<Ast, Error> {
         if let Some(i) = index_of(src, "<=") {
             Ok(Ast::Op(
                 Operator::SmallerOrEqual,
@@ -205,7 +205,7 @@ impl Ast {
         }
     }
 
-    fn parse_lt<'a>(src: &'a str) -> Result<Ast, Error> {
+    fn parse_lt(src: &str) -> Result<Ast, Error> {
         if let Some(i) = index_of(src, "<") {
             Ok(Ast::Op(
                 Operator::Smaller,
@@ -217,7 +217,7 @@ impl Ast {
         }
     }
 
-    fn parse_eq<'a>(src: &'a str) -> Result<Ast, Error> {
+    fn parse_eq(src: &str) -> Result<Ast, Error> {
         if let Some(i) = index_of(src, "==") {
             Ok(Ast::Op(
                 Operator::Equal,
@@ -229,7 +229,7 @@ impl Ast {
         }
     }
 
-    fn parse_neq<'a>(src: &'a str) -> Result<Ast, Error> {
+    fn parse_neq(src: &str) -> Result<Ast, Error> {
         if let Some(i) = index_of(src, "!=") {
             Ok(Ast::Op(
                 Operator::NotEqual,
@@ -240,7 +240,7 @@ impl Ast {
             Self::parse_mod(src)
         }
     }
-    fn parse_mod<'a>(src: &'a str) -> Result<Ast, Error> {
+    fn parse_mod(src: &str) -> Result<Ast, Error> {
         if let Some(i) = index_of(src, "%") {
             Ok(Ast::Op(
                 Operator::Modulo,
@@ -252,7 +252,7 @@ impl Ast {
         }
     }
 
-    fn parse_not<'a>(src: &'a str) -> Result<Ast, Error> {
+    fn parse_not(src: &str) -> Result<Ast, Error> {
         if index_of(src, "!") == Some(0) {
             Ok(Ast::Not(Box::new(Ast::parse(&src[1..])?)))
         } else {
@@ -260,7 +260,7 @@ impl Ast {
         }
     }
 
-    fn parse_int<'a>(src: &'a str) -> Result<Ast, Error> {
+    fn parse_int(src: &str) -> Result<Ast, Error> {
         if let Ok(x) = u64::from_str_radix(src, 10) {
             Ok(Ast::Integer(x))
         } else {
@@ -268,7 +268,7 @@ impl Ast {
         }
     }
 
-    fn parse_n<'a>(src: &'a str) -> Result<Ast, Error> {
+    fn parse_n(src: &str) -> Result<Ast, Error> {
         if src == "n" {
             Ok(Ast::N)
         } else {
