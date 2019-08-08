@@ -110,20 +110,12 @@ impl Ast {
     fn parse_parens<'a>(src: &'a str) -> Result<Ast, Error> {
         if src.starts_with('(') {
             let end = src[1..src.len() - 1].chars().fold((1, 2), |(level, index), ch| {
-                if level > 0 {
-                    if ch == ')' {
-                        (level - 1, index + 1)
-                    } else if ch == '(' {
-                        (level + 1, index + 1)
-                    } else {
-                        (level, index + 1)
-                    }
-                } else {
-                    if ch == '(' {
-                        (level + 1, index + 1)
-                    } else {
-                        (level, index)
-                    }
+                match (level, ch) {
+                    (0, '(') => (level + 1, index + 1),
+                    (0, _) => (level, index),
+                    (_, '(') => (level + 1, index + 1),
+                    (_, ')') => (level - 1, index + 1),
+                    (_, _) => (level, index + 1),
                 }
             }).1;
             if end == src.len() {
