@@ -55,7 +55,7 @@ impl error::Error for Error {
 
 impl fmt::Display for Error {
     fn fmt(&self, fmt: &mut fmt::Formatter) -> fmt::Result {
-        let self_err: &error::Error = self;
+        let self_err: &dyn error::Error = self;
         write!(fmt, "{}", self_err.description())
     }
 }
@@ -167,7 +167,7 @@ pub fn parse_catalog<'a, R: io::Read>(mut file: R, opts: ParseOptions) -> Result
         if n < off + len + 1 {
             return Err(Eof);
         }
-        let mut original = &contents[off..off + len + 1];
+        let mut original = &contents[off..=off + len];
         // check for context
         let context = match original.iter().position(|x| *x == 4) {
             Some(idx) => {

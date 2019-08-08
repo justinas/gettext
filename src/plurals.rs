@@ -18,7 +18,7 @@ fn index_of<'a>(src: &'a str, pat: &'static str) -> Option<usize> {
             (None, 0, 0, 0),
             |(match_index, i, n_matches, paren_level), ch| {
                 if let Some(x) = match_index {
-                    return (Some(x), i, n_matches, paren_level);
+                    (Some(x), i, n_matches, paren_level)
                 } else {
                     let new_par_lvl = match ch {
                         '(' => paren_level + 1,
