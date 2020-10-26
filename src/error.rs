@@ -23,7 +23,7 @@ pub enum Error {
     /// An unknown encoding was specified in the metadata
     UnknownEncoding,
 }
-use Error::*;
+use self::Error::*;
 
 impl error::Error for Error {
     fn source(&self) -> Option<&(dyn error::Error + 'static)> {
