@@ -45,6 +45,7 @@
     unused_import_braces
 )]
 
+mod error;
 mod metadata;
 mod parser;
 mod plurals;
@@ -54,8 +55,8 @@ use std::io::Read;
 use std::ops::Deref;
 
 use crate::parser::default_resolver;
-pub use crate::parser::{Error, ParseOptions};
 use crate::plurals::*;
+pub use crate::{error::Error, parser::ParseOptions};
 
 fn key_with_context(context: &str, key: &str) -> String {
     let mut result = context.to_owned();
@@ -104,7 +105,7 @@ impl Catalog {
     /// let file = File::open("french.mo").unwrap();
     /// let catalog = Catalog::parse(file).unwrap();
     /// ```
-    pub fn parse<R: Read>(reader: R) -> Result<Self, parser::Error> {
+    pub fn parse<R: Read>(reader: R) -> Result<Self, Error> {
         ParseOptions::new().parse(reader)
     }
 
