@@ -26,24 +26,26 @@ pub enum Error {
 use Error::*;
 
 impl error::Error for Error {
-    fn description(&self) -> &str {
+    fn source(&self) -> Option<&(dyn error::Error + 'static)> {
         match *self {
-            BadMagic => "bad magic number",
-            DecodingError => "invalid byte sequence in a string",
-            Eof => "unxpected end of file",
-            Io(ref err) => err.description(),
-            MalformedMetadata => "metadata syntax error",
-            MisplacedMetadata => "misplaced metadata",
-            UnknownEncoding => "unknown encoding specified",
-            PluralParsing => "invalid plural expression",
+            Io(ref err) => Some(err),
+            _ => None,
         }
     }
 }
 
 impl fmt::Display for Error {
     fn fmt(&self, fmt: &mut fmt::Formatter) -> fmt::Result {
-        let self_err: &dyn error::Error = self;
-        write!(fmt, "{}", self_err.description())
+        match *self {
+            BadMagic => write!(fmt, "bad magic number"),
+            DecodingError => write!(fmt, "invalid byte sequence in a string"),
+            Eof => write!(fmt, "unxpected end of file"),
+            Io(ref err) => err.fmt(fmt),
+            MalformedMetadata => write!(fmt, "metadata syntax error"),
+            MisplacedMetadata => write!(fmt, "misplaced metadata"),
+            UnknownEncoding => write!(fmt, "unknown encoding specified"),
+            PluralParsing => write!(fmt, "invalid plural expression"),
+        }
     }
 }
 
