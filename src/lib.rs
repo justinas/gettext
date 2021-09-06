@@ -145,7 +145,7 @@ impl Catalog {
     /// in the context `msg_context`
     /// or `msg_id` itself if a translation does not exist.
     // TODO: DRY gettext/pgettext
-    pub fn pgettext<'a>(&'a self, msg_context: &'a str, msg_id: &'a str) -> &'a str {
+    pub fn pgettext<'a>(&'a self, msg_context: &str, msg_id: &'a str) -> &'a str {
         let key = key_with_context(msg_context, &msg_id);
         self.strings
             .get(&key)
@@ -161,7 +161,7 @@ impl Catalog {
     // TODO: DRY ngettext/npgettext
     pub fn npgettext<'a>(
         &'a self,
-        msg_context: &'a str,
+        msg_context: &str,
         msg_id: &'a str,
         msg_id_plural: &'a str,
         n: u64,
