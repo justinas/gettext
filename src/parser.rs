@@ -28,7 +28,7 @@ static utf8_encoding: EncodingRef = &encoding::codec::utf_8::UTF8Encoding;
 #[derive(Default)]
 pub struct ParseOptions {
     force_encoding: Option<EncodingRef>,
-    force_plural: Option<fn(u64) -> usize>,
+    force_plural: Option<fn(i64) -> usize>,
 }
 
 impl ParseOptions {
@@ -57,7 +57,7 @@ impl ParseOptions {
     /// If this option is not enabled,
     /// the parser tries to use the plural formula specified in the metadata
     /// or `n != 1` if metadata is non-existent.
-    pub fn force_plural(mut self, plural: fn(u64) -> usize) -> Self {
+    pub fn force_plural(mut self, plural: fn(i64) -> usize) -> Self {
         self.force_plural = Some(plural);
         self
     }
@@ -174,7 +174,7 @@ pub fn parse_catalog<R: io::Read>(mut file: R, opts: ParseOptions) -> Result<Cat
 ///
 /// It is valid for English and similar languages: plural will be used for any quantity
 /// different of 1.
-pub fn default_resolver(n: u64) -> usize {
+pub fn default_resolver(n: i64) -> usize {
     if n == 1 {
         0
     } else {
