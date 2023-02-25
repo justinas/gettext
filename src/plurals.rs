@@ -8,7 +8,7 @@ pub enum Resolver {
     /// Use Ast::parse to get an Ast
     Expr(Ast),
     /// A function
-    Function(fn(u64) -> usize),
+    Function(fn(i64) -> usize),
 }
 
 /// Finds the index of a pattern, outside of parenthesis
@@ -74,7 +74,7 @@ pub enum Operator {
 }
 
 impl Ast {
-    fn resolve(&self, n: u64) -> usize {
+    fn resolve(&self, n: i64) -> usize {
         match *self {
             Ternary(ref cond, ref ok, ref nok) => {
                 if cond.resolve(n) == 0 {
@@ -280,7 +280,7 @@ impl Ast {
 impl Resolver {
     /// Returns the number of the correct plural form
     /// for `n` objects, as defined by the rule contained in this resolver.
-    pub fn resolve(&self, n: u64) -> usize {
+    pub fn resolve(&self, n: i64) -> usize {
         match *self {
             Expr(ref ast) => ast.resolve(n),
             Function(ref f) => f(n),
