@@ -89,6 +89,11 @@ impl Catalog {
         }
     }
 
+    /// Merge another catalog.
+    pub fn merge(&mut self, catalog: &Catalog) {
+        self.strings.extend(catalog.strings.to_owned());
+    }
+
     /// Parses a gettext catalog from the given binary MO file.
     /// Returns the `Err` variant upon encountering an invalid file format
     /// or invalid byte sequence in strings.
