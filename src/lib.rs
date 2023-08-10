@@ -54,6 +54,7 @@ use std::collections::HashMap;
 use std::io::Read;
 use std::ops::Deref;
 
+use metadata::MetadataMap;
 use crate::parser::default_resolver;
 use crate::plurals::*;
 pub use crate::{error::Error, parser::ParseOptions};
@@ -71,6 +72,8 @@ fn key_with_context(context: &str, key: &str) -> String {
 pub struct Catalog {
     strings: HashMap<String, Message>,
     resolver: Resolver,
+    /// Creates a public optional property to store the metadata from MO files
+    pub metadata: Option<MetadataMap>,
 }
 
 impl Catalog {
@@ -86,6 +89,7 @@ impl Catalog {
         Catalog {
             strings: HashMap::new(),
             resolver: Resolver::Function(default_resolver),
+            metadata: None,
         }
     }
 

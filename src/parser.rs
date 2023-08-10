@@ -147,7 +147,10 @@ pub fn parse_catalog<R: io::Read>(mut file: R, opts: ParseOptions) -> Result<Cat
             .map(|b| encoding.decode(b, Strict))
             .collect::<Result<Vec<_>, _>>()?;
         if id == "" {
-            let map = parse_metadata(&*translated[0])?;
+            // Parse the metadata from the first translation string, returning early if there's an error.
+            let map = parse_metadata((*translated[0]).to_string())?;
+            // Set the metadata of the catalog with the parsed result.
+            catalog.metadata = Some(map.clone());           
             if let (Some(c), None) = (map.charset(), opts.force_encoding) {
                 encoding = encoding_from_whatwg_label(c).ok_or(UnknownEncoding)?;
             }
