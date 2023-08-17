@@ -46,7 +46,8 @@
 )]
 
 mod error;
-mod metadata;
+///
+pub mod metadata;
 mod parser;
 mod plurals;
 
@@ -54,10 +55,10 @@ use std::collections::HashMap;
 use std::io::Read;
 use std::ops::Deref;
 
-use metadata::MetadataMap;
 use crate::parser::default_resolver;
 use crate::plurals::*;
 pub use crate::{error::Error, parser::ParseOptions};
+use metadata::MetadataMap;
 
 fn key_with_context(context: &str, key: &str) -> String {
     let mut result = context.to_owned();
@@ -70,7 +71,8 @@ fn key_with_context(context: &str, key: &str) -> String {
 /// parsed out of one MO file.
 #[derive(Clone, Debug)]
 pub struct Catalog {
-    strings: HashMap<String, Message>,
+    ///
+    pub strings: HashMap<String, Message>,
     resolver: Resolver,
     /// Creates a public optional property to store the metadata from MO files
     pub metadata: Option<MetadataMap>,
@@ -91,6 +93,11 @@ impl Catalog {
             resolver: Resolver::Function(default_resolver),
             metadata: None,
         }
+    }
+
+    /// Merge another catalog.
+    pub fn merge(&mut self, catalog: &Catalog) {
+        self.strings.extend(catalog.strings.to_owned());
     }
 
     /// Parses a gettext catalog from the given binary MO file.
@@ -183,7 +190,8 @@ impl Catalog {
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
-struct Message {
+///
+pub struct Message {
     id: String,
     context: Option<String>,
     translated: Vec<String>,

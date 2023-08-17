@@ -5,11 +5,13 @@ use super::Error;
 use crate::Error::MalformedMetadata;
 
 #[derive(Debug, Clone)]
+
+///
 pub struct MetadataMap(HashMap<String, String>);
 
-impl MetadataMap {      
+impl MetadataMap {
     /// Returns a string that indicates the character set.
-    pub fn charset(&self) -> Option<&str> { 
+    pub fn charset(&self) -> Option<&str> {
         self.get("Content-Type")
             .and_then(|x| x.split("charset=").nth(1))
     }
@@ -19,7 +21,7 @@ impl MetadataMap {
     /// the number of elements.
     ///
     /// Defaults to `n_plurals = 2` and `plural = n!=1` (as in English).
-    pub fn plural_forms(&self) -> (Option<usize>, Option<& str>) {
+    pub fn plural_forms(&self) -> (Option<usize>, Option<&str>) {
         self.get("Plural-Forms")
             .map(|f| {
                 f.split(';').fold((None, None), |(n_pl, pl), prop| {
@@ -62,7 +64,10 @@ pub fn parse_metadata(blob: String) -> Result<MetadataMap, Error> {
             Some(p) => p,
             None => return Err(MalformedMetadata),
         };
-        map.insert(line[..pos].trim().to_string(), line[pos + 1..].trim().to_string());
+        map.insert(
+            line[..pos].trim().to_string(),
+            line[pos + 1..].trim().to_string(),
+        );
     }
     Ok(map)
 }
@@ -76,7 +81,10 @@ fn test_metadatamap_charset() {
         assert!(map.charset().is_none());
         map.insert("Content-Type".to_string(), "abc".to_string());
         assert!(map.charset().is_none());
-        map.insert("Content-Type".to_string(), "text/plain; charset=utf-42".to_string());
+        map.insert(
+            "Content-Type".to_string(),
+            "text/plain; charset=utf-42".to_string(),
+        );
         assert_eq!(map.charset().unwrap(), "utf-42");
     }
 }
@@ -93,13 +101,22 @@ fn test_metadatamap_plural() {
         map.insert("Plural-Forms".to_string(), "n_plurals=42".to_string());
         assert_eq!(map.plural_forms(), (Some(42), None));
         // plural is specified
-        map.insert("Plural-Forms".to_string(), "n_plurals=2; plural=n==12".to_string());
+        map.insert(
+            "Plural-Forms".to_string(),
+            "n_plurals=2; plural=n==12".to_string(),
+        );
         assert_eq!(map.plural_forms(), (Some(2), Some("n==12")));
         // plural before n_plurals
-        map.insert("Plural-Forms".to_string(), "plural=n==12; n_plurals=2".to_string());
+        map.insert(
+            "Plural-Forms".to_string(),
+            "plural=n==12; n_plurals=2".to_string(),
+        );
         assert_eq!(map.plural_forms(), (Some(2), Some("n==12")));
         // with spaces
-        map.insert("Plural-Forms".to_string(), " n_plurals = 42 ; plural = n >  10   ".to_string());
+        map.insert(
+            "Plural-Forms".to_string(),
+            " n_plurals = 42 ; plural = n >  10   ".to_string(),
+        );
         assert_eq!(map.plural_forms(), (Some(42), Some("n >  10")));
     }
 }
