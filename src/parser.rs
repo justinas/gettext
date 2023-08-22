@@ -129,9 +129,11 @@ pub fn parse_catalog<R: io::Read>(mut file: R, opts: ParseOptions) -> Result<Cat
                 if b_plural.is_empty() {
                     (encoding.decode(b_singular, Strict)?, None)
                 } else {
+                    let plural_string = encoding.decode(b_plural, Strict)?;
+                    let trimmed_plural = plural_string.trim_end_matches('\0');
                     (
                         encoding.decode(b_singular, Strict)?,
-                        Some(encoding.decode(b_plural, Strict)?),
+                        Some(trimmed_plural.to_string()),
                     )
                 }
             }
