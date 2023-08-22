@@ -46,7 +46,9 @@
 )]
 
 mod error;
-///
+/// Declare a public module named `metadata`.
+/// This module contains code related to handling metadata associated with translation entries.
+/// It provides functionality for managing key-value pairs of metadata.
 pub mod metadata;
 mod parser;
 mod plurals;
