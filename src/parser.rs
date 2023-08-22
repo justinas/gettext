@@ -119,13 +119,22 @@ pub fn parse_catalog<R: io::Read>(mut file: R, opts: ParseOptions) -> Result<Cat
             }
             None => None,
         };
-        // extract msg_id singular, ignoring the plural
-        let id = match original
+        // extract msg_id singular and plural
+        let (id, id_plural) = match original
             .iter()
             .position(|x| *x == 0)
-            .map(|i| &original[..i])
+            .map(|i| (&original[..i], &original[i + 1..]))
         {
-            Some(b) => encoding.decode(b, Strict)?,
+            Some((b_singular, b_plural)) => {
+                if b_plural.is_empty() {
+                    (encoding.decode(b_singular, Strict)?, None)
+                } else {
+                    (
+                        encoding.decode(b_singular, Strict)?,
+                        Some(encoding.decode(b_plural, Strict)?),
+                    )
+                }
+            }
             None => return Err(Eof),
         };
         if id == "" && i != 0 {
@@ -150,7 +159,7 @@ pub fn parse_catalog<R: io::Read>(mut file: R, opts: ParseOptions) -> Result<Cat
             // Parse the metadata from the first translation string, returning early if there's an error.
             let map = parse_metadata((*translated[0]).to_string())?;
             // Set the metadata of the catalog with the parsed result.
-            catalog.metadata = Some(map.clone());           
+            catalog.metadata = Some(map.clone());
             if let (Some(c), None) = (map.charset(), opts.force_encoding) {
                 encoding = encoding_from_whatwg_label(c).ok_or(UnknownEncoding)?;
             }
@@ -161,7 +170,7 @@ pub fn parse_catalog<R: io::Read>(mut file: R, opts: ParseOptions) -> Result<Cat
             }
         }
 
-        catalog.insert(Message::new(id, context, translated));
+        catalog.insert(Message::new(id, id_plural, context, translated));
 
         off_otable += 8;
         off_ttable += 8;
@@ -248,7 +257,12 @@ fn test_parse_catalog() {
         assert_eq!(catalog.strings.len(), 1);
         assert_eq!(
             catalog.strings["this is context\x04Text"],
-            Message::new("Text", Some("this is context"), vec!["Tekstas", "Tekstai"])
+            Message::new(
+                "Text",
+                None,
+                Some("this is context"),
+                vec!["Tekstas", "Tekstai"]
+            )
         );
     }
 
@@ -258,7 +272,7 @@ fn test_parse_catalog() {
         assert_eq!(catalog.strings.len(), 2);
         assert_eq!(
             catalog.strings["Image"],
-            Message::new("Image", None, vec!["Nuotrauka", "Nuotraukos"])
+            Message::new("Image", None, None, vec!["Nuotrauka", "Nuotraukos"])
         );
     }
 
