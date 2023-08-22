@@ -6,7 +6,9 @@ use crate::Error::MalformedMetadata;
 
 #[derive(Debug, Clone)]
 
-///
+/// Define a struct called `MetadataMap` that represents a map of metadata.
+/// It is a simple wrapper around a `HashMap` with `String` keys and `String` values.
+/// This struct is used to store key-value pairs of metadata associated with a translation entry or other data.
 pub struct MetadataMap(HashMap<String, String>);
 
 impl MetadataMap {
