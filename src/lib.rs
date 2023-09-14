@@ -201,7 +201,7 @@ pub struct Message {
     pub id: String,
     /// An optional plural form of the original string, used for languages
     /// that have more than one form for plurals.
-    pub id_plural: Option<String>,
+    pub plural: Option<String>,
     /// An optional context for the translation, used for disambiguation
     /// when the same original string can have different translations
     /// depending on its usage.
@@ -214,13 +214,13 @@ pub struct Message {
 impl Message {
     fn new<T: Into<String>>(
         id: T,
-        id_plural: Option<T>,
+        plural: Option<T>,
         context: Option<T>,
         translated: Vec<T>,
     ) -> Self {
         Message {
             id: id.into(),
-            id_plural: id_plural.map(Into::into),
+            plural: plural.map(Into::into),
             context: context.map(Into::into),
             translated: translated.into_iter().map(Into::into).collect(),
         }

@@ -120,7 +120,7 @@ pub fn parse_catalog<R: io::Read>(mut file: R, opts: ParseOptions) -> Result<Cat
             None => None,
         };
         // extract msg_id singular and plural
-        let (id, id_plural) = match original
+        let (id, plural) = match original
             .iter()
             .position(|x| *x == 0)
             .map(|i| (&original[..i], &original[i + 1..]))
@@ -172,7 +172,7 @@ pub fn parse_catalog<R: io::Read>(mut file: R, opts: ParseOptions) -> Result<Cat
             }
         }
 
-        catalog.insert(Message::new(id, id_plural, context, translated));
+        catalog.insert(Message::new(id, plural, context, translated));
 
         off_otable += 8;
         off_ttable += 8;
