@@ -172,7 +172,14 @@ pub fn parse_catalog<R: io::Read>(mut file: R, opts: ParseOptions) -> Result<Cat
             }
         }
 
-        catalog.insert(Message::new(id, plural, context, translated));
+		// Checks the presence of a plural form for the message.
+		// If a plural form is provided, the message is inserted into the catalog using the `with_plural` method.
+		// Otherwise, the message is inserted using the default `new` method.
+		if plural.is_some() {
+			catalog.insert(Message::with_plural(id, context, translated, plural));
+		} else {
+			catalog.insert(Message::new(id, context, translated));
+		}
 
         off_otable += 8;
         off_ttable += 8;
@@ -261,7 +268,6 @@ fn test_parse_catalog() {
             catalog.strings["this is context\x04Text"],
             Message::new(
                 "Text",
-                None,
                 Some("this is context"),
                 vec!["Tekstas", "Tekstai"]
             )
@@ -274,7 +280,7 @@ fn test_parse_catalog() {
         assert_eq!(catalog.strings.len(), 2);
         assert_eq!(
             catalog.strings["Image"],
-            Message::new("Image", None, None, vec!["Nuotrauka", "Nuotraukos"])
+            Message::new("Image", None, vec!["Nuotrauka", "Nuotraukos"])
         );
     }
 

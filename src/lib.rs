@@ -199,9 +199,6 @@ pub struct Message {
     /// The original string to be translated, used as the key for looking up
     /// translations.
     pub id: String,
-    /// An optional plural form of the original string, used for languages
-    /// that have more than one form for plurals.
-    pub plural: Option<String>,
     /// An optional context for the translation, used for disambiguation
     /// when the same original string can have different translations
     /// depending on its usage.
@@ -209,22 +206,41 @@ pub struct Message {
     /// Translated strings for the message. Contains one string for each
     /// plural form in the target language.
     pub translated: Vec<String>,
+	/// An optional plural form of the original string, used for languages
+    /// that have more than one form for plurals.
+    pub plural: Option<String>,
 }
 
 impl Message {
+	/// Constructs a new `Message` instance with the given id, context and translated strings.
     fn new<T: Into<String>>(
         id: T,
-        plural: Option<T>,
         context: Option<T>,
         translated: Vec<T>,
     ) -> Self {
         Message {
             id: id.into(),
-            plural: plural.map(Into::into),
             context: context.map(Into::into),
             translated: translated.into_iter().map(Into::into).collect(),
+			plural: None
         }
     }
+	/// Constructs a new `Message` instance with the given id, context, translated strings, 
+	/// and an optional plural form which will be used only when a plural form is available.
+	fn with_plural<T: Into<String>>(
+        id: T,
+		context: Option<T>,
+        translated: Vec<T>,
+		plural: Option<T>,
+    ) -> Self {
+        Message {
+            id: id.into(),
+            context: context.map(Into::into),
+            translated: translated.into_iter().map(Into::into).collect(),
+			plural: plural.map(Into::into),
+        }
+    }
+
 
     fn get_translated(&self, form_no: usize) -> Option<&str> {
         self.translated.get(form_no).map(|s| s.deref())
@@ -242,15 +258,14 @@ fn catalog_insert() {
     let mut cat = Catalog::new();
     cat.insert(Message::new(
         "thisisid",
-        Some("thisispluralid"),
         None,
         vec![],
     ));
-    cat.insert(Message::new(
+    cat.insert(Message::with_plural(
         "anotherid",
-        Some("thisispluralid"),
         Some("context"),
         vec![],
+		Some("thisispluralid")
     ));
     let mut keys = cat.strings.keys().collect::<Vec<_>>();
     keys.sort();
@@ -260,12 +275,12 @@ fn catalog_insert() {
 #[test]
 fn catalog_gettext() {
     let mut cat = Catalog::new();
-    cat.insert(Message::new("Text", Some("Texts"), None, vec!["Tekstas"]));
-    cat.insert(Message::new(
+    cat.insert(Message::new("Text", None, vec!["Tekstas"]));
+    cat.insert(Message::with_plural(
         "Image",
-        Some("Images"),
         Some("context"),
         vec!["Paveikslelis"],
+		Some("Images"),
     ));
     assert_eq!(cat.gettext("Text"), "Tekstas");
     assert_eq!(cat.gettext("Image"), "Image");
@@ -282,11 +297,11 @@ fn catalog_ngettext() {
         assert_eq!(cat.ngettext("Text", "Texts", 2), "Texts");
     }
     {
-        cat.insert(Message::new(
+        cat.insert(Message::with_plural(
             "Text",
-            Some("Texts"),
             None,
             vec!["Tekstas", "Tekstai"],
+			Some("Texts"),
         ));
         // n == 1, translation available
         assert_eq!(cat.ngettext("Text", "Texts", 1), "Tekstas");
@@ -303,7 +318,7 @@ fn catalog_ngettext_not_enough_forms_in_message() {
     }
 
     let mut cat = Catalog::new();
-    cat.insert(Message::new("Text", None, None, vec!["Tekstas", "Tekstai"]));
+    cat.insert(Message::new("Text", None, vec!["Tekstas", "Tekstai"]));
     cat.resolver = Resolver::Function(resolver);
     assert_eq!(cat.ngettext("Text", "Texts", 0), "Tekstas");
     assert_eq!(cat.ngettext("Text", "Texts", 1), "Tekstai");
@@ -317,11 +332,11 @@ fn catalog_npgettext_not_enough_forms_in_message() {
     }
 
     let mut cat = Catalog::new();
-    cat.insert(Message::new(
+    cat.insert(Message::with_plural(
         "Text",
-        Some("Texts"),
         Some("ctx"),
         vec!["Tekstas", "Tekstai"],
+		Some("Texts")
     ));
     cat.resolver = Resolver::Function(resolver);
     assert_eq!(cat.npgettext("ctx", "Text", "Texts", 0), "Tekstas");
@@ -332,11 +347,11 @@ fn catalog_npgettext_not_enough_forms_in_message() {
 #[test]
 fn catalog_pgettext() {
     let mut cat = Catalog::new();
-    cat.insert(Message::new(
+    cat.insert(Message::with_plural(
         "Text",
-        Some("Texts"),
         Some("unit test"),
         vec!["Tekstas"],
+		Some("Texts")
     ));
     assert_eq!(cat.pgettext("unit test", "Text"), "Tekstas");
     assert_eq!(cat.pgettext("integration test", "Text"), "Text");
@@ -345,11 +360,11 @@ fn catalog_pgettext() {
 #[test]
 fn catalog_npgettext() {
     let mut cat = Catalog::new();
-    cat.insert(Message::new(
+    cat.insert(Message::with_plural(
         "Text",
-        Some("Texts"),
         Some("unit test"),
         vec!["Tekstas", "Tekstai"],
+		Some("Texts"),
     ));
 
     assert_eq!(cat.npgettext("unit test", "Text", "Texts", 1), "Tekstas");
