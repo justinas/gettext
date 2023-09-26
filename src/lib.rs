@@ -208,7 +208,7 @@ pub struct Message {
     pub translated: Vec<String>,
 	/// An optional plural form of the original string, used for languages
     /// that have more than one form for plurals.
-    pub plural: Option<String>,
+    pub plural: Option<String>
 }
 
 impl Message {
