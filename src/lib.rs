@@ -143,7 +143,7 @@ impl Catalog {
     /// with the correct plural form for the number `n` of objects.
     /// Returns msg_id if a translation does not exist and `n == 1`,
     /// msg_id_plural otherwise.
-    pub fn ngettext<'a>(&'a self, msg_id: &'a str, msg_id_plural: &'a str, n: u64) -> &'a str {
+    pub fn ngettext<'a>(&'a self, msg_id: &'a str, msg_id_plural: &'a str, n: i64) -> &'a str {
         let form_no = self.resolver.resolve(n);
         let message = self.strings.get(msg_id);
         match message.and_then(|m| m.get_translated(form_no)) {
@@ -177,7 +177,7 @@ impl Catalog {
         msg_context: &str,
         msg_id: &'a str,
         msg_id_plural: &'a str,
-        n: u64,
+        n: i64,
     ) -> &'a str {
         let key = key_with_context(msg_context, &msg_id);
         let form_no = self.resolver.resolve(n);
