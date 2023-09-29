@@ -206,13 +206,13 @@ pub struct Message {
     /// Translated strings for the message. Contains one string for each
     /// plural form in the target language.
     pub translated: Vec<String>,
-	/// An optional plural form of the original string, used for languages
+    /// An optional plural form of the original string, used for languages
     /// that have more than one form for plurals.
     pub plural: Option<String>
 }
 
 impl Message {
-	/// Constructs a new `Message` instance with the given id, context and translated strings.
+    /// Constructs a new `Message` instance with the given id, context and translated strings.
     fn new<T: Into<String>>( id: T, context: Option<T>, translated: Vec<T>) -> Self {
         Message {
             id: id.into(),
