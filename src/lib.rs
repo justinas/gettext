@@ -213,7 +213,7 @@ pub struct Message {
 
 impl Message {
     /// Constructs a new `Message` instance with the given id, context and translated strings.
-    fn new<T: Into<String>>( id: T, context: Option<T>, translated: Vec<T>) -> Self {
+    fn new<T: Into<String>>(id: T, context: Option<T>, translated: Vec<T>) -> Self {
         Message {
             id: id.into(),
             context: context.map(Into::into),
