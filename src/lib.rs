@@ -213,11 +213,7 @@ pub struct Message {
 
 impl Message {
 	/// Constructs a new `Message` instance with the given id, context and translated strings.
-    fn new<T: Into<String>>(
-        id: T,
-        context: Option<T>,
-        translated: Vec<T>,
-    ) -> Self {
+    fn new<T: Into<String>>( id: T, context: Option<T>, translated: Vec<T>) -> Self {
         Message {
             id: id.into(),
             context: context.map(Into::into),
@@ -261,6 +257,17 @@ fn catalog_insert() {
         None,
         vec![],
     ));
+	cat.insert(Message::new(
+        "thisisid",
+        Some("context"),
+        vec![],
+    ));
+    cat.insert(Message::with_plural(
+        "anotherid",
+        None,
+        vec![],
+		Some("thisispluralid")
+    ));
     cat.insert(Message::with_plural(
         "anotherid",
         Some("context"),
@@ -269,21 +276,30 @@ fn catalog_insert() {
     ));
     let mut keys = cat.strings.keys().collect::<Vec<_>>();
     keys.sort();
-    assert_eq!(keys, &["context\x04anotherid", "thisisid"])
+    assert_eq!(keys, &["anotherid", "context\x04anotherid", "context\x04thisisid", "thisisid"])
 }
 
 #[test]
 fn catalog_gettext() {
     let mut cat = Catalog::new();
     cat.insert(Message::new("Text", None, vec!["Tekstas"]));
+	cat.insert(Message::new("Text", Some("context"), vec!["Tekstas"]));
+	cat.insert(Message::with_plural(
+        "Image",
+        None,
+        vec!["Paveikslelis"],
+		Some("Images"),
+    ));
     cat.insert(Message::with_plural(
         "Image",
         Some("context"),
         vec!["Paveikslelis"],
 		Some("Images"),
     ));
-    assert_eq!(cat.gettext("Text"), "Tekstas");
-    assert_eq!(cat.gettext("Image"), "Image");
+	assert_eq!(cat.gettext("Text"), "Tekstas");
+    assert_eq!(cat.gettext("context\x04Text"), "Tekstas");
+	assert_eq!(cat.gettext("Image"), "Paveikslelis");
+    assert_eq!(cat.gettext("context\x04Image"), "Paveikslelis");
 }
 
 #[test]
