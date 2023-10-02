@@ -207,7 +207,7 @@ pub struct Message {
     /// plural form in the target language.
     pub translated: Vec<String>,
     /// An optional plural form of the original string, used with ngettext.
-    pub plural: Option<String>
+    pub plural: Option<String>,
 }
 
 impl Message {
@@ -217,25 +217,24 @@ impl Message {
             id: id.into(),
             context: context.map(Into::into),
             translated: translated.into_iter().map(Into::into).collect(),
-	    plural: None
+            plural: None,
         }
     }
-	/// Constructs a new `Message` instance with the given id, context, translated strings, 
-	/// and an optional plural form which will be used only when a plural form is available.
-	fn with_plural<T: Into<String>>(
+    /// Constructs a new `Message` instance with the given id, context, translated strings,
+    /// and an optional plural form which will be used only when a plural form is available.
+    fn with_plural<T: Into<String>>(
         id: T,
-		context: Option<T>,
+        context: Option<T>,
         translated: Vec<T>,
-		plural: Option<T>,
+        plural: Option<T>,
     ) -> Self {
         Message {
             id: id.into(),
             context: context.map(Into::into),
             translated: translated.into_iter().map(Into::into).collect(),
-	    plural: plural.map(Into::into),
+            plural: plural.map(Into::into),
         }
     }
-
 
     fn get_translated(&self, form_no: usize) -> Option<&str> {
         self.translated.get(form_no).map(|s| s.deref())
@@ -251,49 +250,49 @@ fn catalog_impls_send_sync() {
 #[test]
 fn catalog_insert() {
     let mut cat = Catalog::new();
-    cat.insert(Message::new(
-        "thisisid",
-        None,
-        vec![],
-    ));
-	cat.insert(Message::new(
-        "thisisid",
-        Some("context"),
-        vec![],
-    ));
+    cat.insert(Message::new("thisisid", None, vec![]));
+    cat.insert(Message::new("thisisid", Some("context"), vec![]));
     cat.insert(Message::with_plural(
         "anotherid",
         None,
         vec![],
-	Some("thisispluralid")
+        Some("thisispluralid"),
     ));
     cat.insert(Message::with_plural(
         "anotherid",
         Some("context"),
         vec![],
-	Some("thisispluralid")
+        Some("thisispluralid"),
     ));
     let mut keys = cat.strings.keys().collect::<Vec<_>>();
     keys.sort();
-    assert_eq!(keys, &["anotherid", "context\x04anotherid", "context\x04thisisid", "thisisid"])
+    assert_eq!(
+        keys,
+        &[
+            "anotherid",
+            "context\x04anotherid",
+            "context\x04thisisid",
+            "thisisid"
+        ]
+    )
 }
 
 #[test]
 fn catalog_gettext() {
     let mut cat = Catalog::new();
     cat.insert(Message::new("Text", None, vec!["Tekstas"]));
-	cat.insert(Message::new("Text", Some("context"), vec!["Tekstas"]));
-	cat.insert(Message::with_plural(
+    cat.insert(Message::new("Text", Some("context"), vec!["Tekstas"]));
+    cat.insert(Message::with_plural(
         "Image",
         None,
         vec!["Paveikslelis"],
-	Some("Images"),
+        Some("Images"),
     ));
     cat.insert(Message::with_plural(
         "Image",
         Some("context"),
         vec!["Paveikslelis"],
-	Some("Images"),
+        Some("Images"),
     ));
     assert_eq!(cat.gettext("Text"), "Tekstas");
     assert_eq!(cat.gettext("context\x04Text"), "Tekstas");
@@ -316,7 +315,7 @@ fn catalog_ngettext() {
             "Text",
             None,
             vec!["Tekstas", "Tekstai"],
-			Some("Texts"),
+            Some("Texts"),
         ));
         // n == 1, translation available
         assert_eq!(cat.ngettext("Text", "Texts", 1), "Tekstas");
@@ -351,7 +350,7 @@ fn catalog_npgettext_not_enough_forms_in_message() {
         "Text",
         Some("ctx"),
         vec!["Tekstas", "Tekstai"],
-	Some("Texts")
+        Some("Texts"),
     ));
     cat.resolver = Resolver::Function(resolver);
     assert_eq!(cat.npgettext("ctx", "Text", "Texts", 0), "Tekstas");
@@ -366,7 +365,7 @@ fn catalog_pgettext() {
         "Text",
         Some("unit test"),
         vec!["Tekstas"],
-	Some("Texts")
+        Some("Texts"),
     ));
     assert_eq!(cat.pgettext("unit test", "Text"), "Tekstas");
     assert_eq!(cat.pgettext("integration test", "Text"), "Text");
@@ -379,7 +378,7 @@ fn catalog_npgettext() {
         "Text",
         Some("unit test"),
         vec!["Tekstas", "Tekstai"],
-	Some("Texts"),
+        Some("Texts"),
     ));
 
     assert_eq!(cat.npgettext("unit test", "Text", "Texts", 1), "Tekstas");
