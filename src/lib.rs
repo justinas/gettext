@@ -46,7 +46,10 @@
 )]
 
 mod error;
-mod metadata;
+/// Declare a public module named `metadata`.
+/// This module contains code related to handling metadata associated with translation entries.
+/// It provides functionality for managing key-value pairs of metadata.
+pub mod metadata;
 mod parser;
 mod plurals;
 
@@ -57,6 +60,7 @@ use std::ops::Deref;
 use crate::parser::default_resolver;
 use crate::plurals::*;
 pub use crate::{error::Error, parser::ParseOptions};
+use metadata::MetadataMap;
 
 fn key_with_context(context: &str, key: &str) -> String {
     let mut result = context.to_owned();
@@ -69,8 +73,11 @@ fn key_with_context(context: &str, key: &str) -> String {
 /// parsed out of one MO file.
 #[derive(Clone, Debug)]
 pub struct Catalog {
-    strings: HashMap<String, Message>,
+    /// Creates a public property to store the `Message` values from MO files
+    pub strings: HashMap<String, Message>,
     resolver: Resolver,
+    /// Creates a public optional property to store the metadata from MO files
+    pub metadata: Option<MetadataMap>,
 }
 
 impl Catalog {
@@ -86,7 +93,13 @@ impl Catalog {
         Catalog {
             strings: HashMap::new(),
             resolver: Resolver::Function(default_resolver),
+            metadata: None,
         }
+    }
+
+    /// Merge another catalog.
+    pub fn merge(&mut self, catalog: &Catalog) {
+        self.strings.extend(catalog.strings.to_owned());
     }
 
     /// Parses a gettext catalog from the given binary MO file.
@@ -130,7 +143,7 @@ impl Catalog {
     /// with the correct plural form for the number `n` of objects.
     /// Returns msg_id if a translation does not exist and `n == 1`,
     /// msg_id_plural otherwise.
-    pub fn ngettext<'a>(&'a self, msg_id: &'a str, msg_id_plural: &'a str, n: u64) -> &'a str {
+    pub fn ngettext<'a>(&'a self, msg_id: &'a str, msg_id_plural: &'a str, n: i64) -> &'a str {
         let form_no = self.resolver.resolve(n);
         let message = self.strings.get(msg_id);
         match message.and_then(|m| m.get_translated(form_no)) {
@@ -164,7 +177,7 @@ impl Catalog {
         msg_context: &str,
         msg_id: &'a str,
         msg_id_plural: &'a str,
-        n: u64,
+        n: i64,
     ) -> &'a str {
         let key = key_with_context(msg_context, &msg_id);
         let form_no = self.resolver.resolve(n);
@@ -179,18 +192,47 @@ impl Catalog {
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
-struct Message {
-    id: String,
-    context: Option<String>,
-    translated: Vec<String>,
+/// `Message` represents a message that can be translated. It contains
+/// the original string (ID), an optional plural form, an optional context
+/// for disambiguation, and the translated strings for the message.
+pub struct Message {
+    /// The original string to be translated, used as the key for looking up
+    /// translations.
+    pub id: String,
+    /// An optional context for the translation, used for disambiguation
+    /// when the same original string can have different translations
+    /// depending on its usage.
+    pub context: Option<String>,
+    /// Translated strings for the message. Contains one string for each
+    /// plural form in the target language.
+    pub translated: Vec<String>,
+    /// An optional plural form of the original string, used with ngettext.
+    pub plural: Option<String>,
 }
 
 impl Message {
+    /// Constructs a new `Message` instance with the given id, context and translated strings.
     fn new<T: Into<String>>(id: T, context: Option<T>, translated: Vec<T>) -> Self {
         Message {
             id: id.into(),
             context: context.map(Into::into),
             translated: translated.into_iter().map(Into::into).collect(),
+            plural: None,
+        }
+    }
+    /// Constructs a new `Message` instance with the given id, context, translated strings,
+    /// and an optional plural form which will be used only when a plural form is available.
+    fn with_plural<T: Into<String>>(
+        id: T,
+        context: Option<T>,
+        translated: Vec<T>,
+        plural: Option<T>,
+    ) -> Self {
+        Message {
+            id: id.into(),
+            context: context.map(Into::into),
+            translated: translated.into_iter().map(Into::into).collect(),
+            plural: plural.map(Into::into),
         }
     }
 
@@ -209,19 +251,53 @@ fn catalog_impls_send_sync() {
 fn catalog_insert() {
     let mut cat = Catalog::new();
     cat.insert(Message::new("thisisid", None, vec![]));
-    cat.insert(Message::new("anotherid", Some("context"), vec![]));
+    cat.insert(Message::new("thisisid", Some("context"), vec![]));
+    cat.insert(Message::with_plural(
+        "anotherid",
+        None,
+        vec![],
+        Some("thisispluralid"),
+    ));
+    cat.insert(Message::with_plural(
+        "anotherid",
+        Some("context"),
+        vec![],
+        Some("thisispluralid"),
+    ));
     let mut keys = cat.strings.keys().collect::<Vec<_>>();
     keys.sort();
-    assert_eq!(keys, &["context\x04anotherid", "thisisid"])
+    assert_eq!(
+        keys,
+        &[
+            "anotherid",
+            "context\x04anotherid",
+            "context\x04thisisid",
+            "thisisid"
+        ]
+    )
 }
 
 #[test]
 fn catalog_gettext() {
     let mut cat = Catalog::new();
     cat.insert(Message::new("Text", None, vec!["Tekstas"]));
-    cat.insert(Message::new("Image", Some("context"), vec!["Paveikslelis"]));
+    cat.insert(Message::new("Text", Some("context"), vec!["Tekstas"]));
+    cat.insert(Message::with_plural(
+        "Image",
+        None,
+        vec!["Paveikslelis"],
+        Some("Images"),
+    ));
+    cat.insert(Message::with_plural(
+        "Image",
+        Some("context"),
+        vec!["Paveikslelis"],
+        Some("Images"),
+    ));
     assert_eq!(cat.gettext("Text"), "Tekstas");
-    assert_eq!(cat.gettext("Image"), "Image");
+    assert_eq!(cat.gettext("context\x04Text"), "Tekstas");
+    assert_eq!(cat.gettext("Image"), "Paveikslelis");
+    assert_eq!(cat.gettext("context\x04Image"), "Paveikslelis");
 }
 
 #[test]
@@ -235,7 +311,12 @@ fn catalog_ngettext() {
         assert_eq!(cat.ngettext("Text", "Texts", 2), "Texts");
     }
     {
-        cat.insert(Message::new("Text", None, vec!["Tekstas", "Tekstai"]));
+        cat.insert(Message::with_plural(
+            "Text",
+            None,
+            vec!["Tekstas", "Tekstai"],
+            Some("Texts"),
+        ));
         // n == 1, translation available
         assert_eq!(cat.ngettext("Text", "Texts", 1), "Tekstas");
         // n != 1, translation available
@@ -265,10 +346,11 @@ fn catalog_npgettext_not_enough_forms_in_message() {
     }
 
     let mut cat = Catalog::new();
-    cat.insert(Message::new(
+    cat.insert(Message::with_plural(
         "Text",
         Some("ctx"),
         vec!["Tekstas", "Tekstai"],
+        Some("Texts"),
     ));
     cat.resolver = Resolver::Function(resolver);
     assert_eq!(cat.npgettext("ctx", "Text", "Texts", 0), "Tekstas");
@@ -279,7 +361,12 @@ fn catalog_npgettext_not_enough_forms_in_message() {
 #[test]
 fn catalog_pgettext() {
     let mut cat = Catalog::new();
-    cat.insert(Message::new("Text", Some("unit test"), vec!["Tekstas"]));
+    cat.insert(Message::with_plural(
+        "Text",
+        Some("unit test"),
+        vec!["Tekstas"],
+        Some("Texts"),
+    ));
     assert_eq!(cat.pgettext("unit test", "Text"), "Tekstas");
     assert_eq!(cat.pgettext("integration test", "Text"), "Text");
 }
@@ -287,10 +374,11 @@ fn catalog_pgettext() {
 #[test]
 fn catalog_npgettext() {
     let mut cat = Catalog::new();
-    cat.insert(Message::new(
+    cat.insert(Message::with_plural(
         "Text",
         Some("unit test"),
         vec!["Tekstas", "Tekstai"],
+        Some("Texts"),
     ));
 
     assert_eq!(cat.npgettext("unit test", "Text", "Texts", 1), "Tekstas");

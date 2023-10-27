@@ -28,7 +28,7 @@ static utf8_encoding: EncodingRef = &encoding::codec::utf_8::UTF8Encoding;
 #[derive(Default)]
 pub struct ParseOptions {
     force_encoding: Option<EncodingRef>,
-    force_plural: Option<fn(u64) -> usize>,
+    force_plural: Option<fn(i64) -> usize>,
 }
 
 impl ParseOptions {
@@ -57,7 +57,7 @@ impl ParseOptions {
     /// If this option is not enabled,
     /// the parser tries to use the plural formula specified in the metadata
     /// or `n != 1` if metadata is non-existent.
-    pub fn force_plural(mut self, plural: fn(u64) -> usize) -> Self {
+    pub fn force_plural(mut self, plural: fn(i64) -> usize) -> Self {
         self.force_plural = Some(plural);
         self
     }
@@ -119,13 +119,24 @@ pub fn parse_catalog<R: io::Read>(mut file: R, opts: ParseOptions) -> Result<Cat
             }
             None => None,
         };
-        // extract msg_id singular, ignoring the plural
-        let id = match original
+        // extract msg_id singular and plural
+        let (id, plural) = match original
             .iter()
             .position(|x| *x == 0)
-            .map(|i| &original[..i])
+            .map(|i| (&original[..i], &original[i + 1..]))
         {
-            Some(b) => encoding.decode(b, Strict)?,
+            Some((b_singular, b_plural)) => {
+                if b_plural.is_empty() {
+                    (encoding.decode(b_singular, Strict)?, None)
+                } else {
+                    let plural_string = encoding.decode(b_plural, Strict)?;
+                    let trimmed_plural = plural_string.trim_end_matches('\0');
+                    (
+                        encoding.decode(b_singular, Strict)?,
+                        Some(trimmed_plural.to_string()),
+                    )
+                }
+            }
             None => return Err(Eof),
         };
         if id == "" && i != 0 {
@@ -147,7 +158,10 @@ pub fn parse_catalog<R: io::Read>(mut file: R, opts: ParseOptions) -> Result<Cat
             .map(|b| encoding.decode(b, Strict))
             .collect::<Result<Vec<_>, _>>()?;
         if id == "" {
-            let map = parse_metadata(&*translated[0])?;
+            // Parse the metadata from the first translation string, returning early if there's an error.
+            let map = parse_metadata((*translated[0]).to_string())?;
+            // Set the metadata of the catalog with the parsed result.
+            catalog.metadata = Some(map.clone());
             if let (Some(c), None) = (map.charset(), opts.force_encoding) {
                 encoding = encoding_from_whatwg_label(c).ok_or(UnknownEncoding)?;
             }
@@ -158,7 +172,14 @@ pub fn parse_catalog<R: io::Read>(mut file: R, opts: ParseOptions) -> Result<Cat
             }
         }
 
-        catalog.insert(Message::new(id, context, translated));
+		// Checks the presence of a plural form for the message.
+		// If a plural form is provided, the message is inserted into the catalog using the `with_plural` method.
+		// Otherwise, the message is inserted using the default `new` method.
+		if plural.is_some() {
+			catalog.insert(Message::with_plural(id, context, translated, plural));
+		} else {
+			catalog.insert(Message::new(id, context, translated));
+		}
 
         off_otable += 8;
         off_ttable += 8;
@@ -174,7 +195,7 @@ pub fn parse_catalog<R: io::Read>(mut file: R, opts: ParseOptions) -> Result<Cat
 ///
 /// It is valid for English and similar languages: plural will be used for any quantity
 /// different of 1.
-pub fn default_resolver(n: u64) -> usize {
+pub fn default_resolver(n: i64) -> usize {
     if n == 1 {
         0
     } else {
@@ -245,7 +266,11 @@ fn test_parse_catalog() {
         assert_eq!(catalog.strings.len(), 1);
         assert_eq!(
             catalog.strings["this is context\x04Text"],
-            Message::new("Text", Some("this is context"), vec!["Tekstas", "Tekstai"])
+            Message::new(
+                "Text",
+                Some("this is context"),
+                vec!["Tekstas", "Tekstai"]
+            )
         );
     }
 
